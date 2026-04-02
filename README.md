@@ -1,5 +1,11 @@
-# Knowledge
-## Instances
+# Competition
+This repository contains a meta-heuristic solution for the [Flexible Job Shop Scheduling Problem with Worker Assignment (FJSSP-W) competition](https://gecco-2026.sigevo.org/Competition?itemId=8261) held by the Genetic and Evolutionary Computation Conference ([GECCO](https://gecco-2026.sigevo.org/HomePage)).
+
+The link to the original competition repository can be found [HERE](https://github.com/jrc-rodec/FJSSP-W-Competition).
+
+The goal is to find a schedule that minimizes the makespan while respecting the constraints of machine and worker availability.
+
+## Data format
 ### FJSSP-W
 #### Header line
 1. Number of jobs
