@@ -124,6 +124,9 @@ class WorkerEncoding:
     def get_operations_for_job(self, job_index: int):
         return self.__operations_by_job[job_index]
     
+    def get_operations_for_all_jobs(self):
+        return self.__operations_by_job
+    
     def is_possible(self, operation: int, machine: int, worker: int):
         return self.__durations[operation, machine, worker] > 0
 
