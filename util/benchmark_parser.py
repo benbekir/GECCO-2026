@@ -57,15 +57,19 @@ class WorkerBenchmarkParser:
         except Exception as exception: print(exception) 
 
         info = file_content[0].split(' ')
+        n_jobs = int(info[0])
         n_machines = int(info[1])
         n_workers = int(round(float(info[2])))
         n_overall_operations = 0
+        operations_by_job = [0] * n_jobs
         lines = [line.split() for line in file_content[1:]]
 
         for i in range(1, len(file_content)):
             line = file_content[i].split(' ')
             lines[i - 1] = line
-            n_overall_operations += int(line[0])
+            operations_count = int(line[0])
+            operations_by_job[i-1] = operations_count
+            n_overall_operations += operations_count
         
         durations = np.zeros((n_overall_operations, n_machines, n_workers), dtype=int)
         operation_index = 0
@@ -74,12 +78,12 @@ class WorkerBenchmarkParser:
         for i in range(1, len(lines)+1):
             line = lines[i-1]
             n_operations = int(line[0])
-            print(f"Total operations for line {i}: {n_operations}")
+            print(f"Total operations for job {i}: {n_operations}")
             index = 1
             for j in range(0, n_operations):
                 job_sequence[operation_index] = i-1
                 n_machine_options = int(line[index])
-                print(f"\tOptions for operation {j+1}: {n_machine_options}")
+                print(f"\tOptions for operation {j+1} (index {operation_index}): {n_machine_options}")
                 index +=1
                 for k in range(0, n_machine_options):
                     machine = int(line[index])
@@ -99,5 +103,5 @@ class WorkerBenchmarkParser:
                 
                 operation_index += 1
                 
-        return WorkerEncoding(durations, job_sequence)
+        return WorkerEncoding(durations, job_sequence, operations_by_job, n_jobs, n_machines, n_workers)
 
