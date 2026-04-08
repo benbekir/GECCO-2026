@@ -2,6 +2,7 @@ import os
 import time
 import pandas as pd
 import ga
+import Algorithms
 
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
@@ -46,7 +47,7 @@ if __name__ == "__main__":
     runner = BenchmarkRunner("instances/fjssp-w")
 
     algorithms = {
-        "GA_Strategy_Plus": lambda path: ga.run(path, ga.Strategy.PLUS),
+        "SPEA-II-GA": lambda path: Algorithms.run(),
     }
 
     runner.run_benchmark(algorithms)
