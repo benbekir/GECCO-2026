@@ -48,7 +48,8 @@ class WorkerBenchmarkParser:
     def __init__(self):
         pass
 
-    def parse_benchmark(self, path: str):
+    def parse_benchmark(self, path: str, output = False):
+        _print = print if output else lambda *a, **k: None
         file_content = []
 
         try:
@@ -78,26 +79,26 @@ class WorkerBenchmarkParser:
         for i in range(1, len(lines)+1):
             line = lines[i-1]
             n_operations = int(line[0])
-            print(f"Total operations for job {i}: {n_operations}")
+            _print(f"Total operations for job {i}: {n_operations}")
             index = 1
             for j in range(0, n_operations):
                 job_sequence[operation_index] = i-1
                 n_machine_options = int(line[index])
-                print(f"\tOptions for operation {j+1} (index {operation_index}): {n_machine_options}")
+                _print(f"\tOptions for operation {j+1} (index {operation_index}): {n_machine_options}")
                 index +=1
                 for k in range(0, n_machine_options):
                     machine = int(line[index])
-                    print(f"\t\tOption {k+1}: Machine {machine}")
+                    _print(f"\t\tOption {k+1}: Machine {machine}")
                     index += 1
                     n_worker_options = int(line[index])
-                    print("\t\t\tWorker options:", n_worker_options)
+                    _print("\t\t\tWorker options:", n_worker_options)
                     index += 1
 
                     for l in range(0, n_worker_options):
                         worker = int(line[index])
                         index += 1
                         duration = int(line[index])
-                        print(f"\t\t\t\t(Worker {worker}, duration {duration})")
+                        _print(f"\t\t\t\t(Worker {worker}, duration {duration})")
                         index += 1
                         durations[operation_index, machine - 1, worker - 1] = duration
                 
