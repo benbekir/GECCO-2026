@@ -21,7 +21,6 @@ class Candidate:
         self.makespan = evaluation.makespan(start_times, m_fixed, w_fixed, encoding.durations())
 
     def __repr__(self) -> str:
-        # {[[(task.job_index, task.task_index, task.duration, task.offset) for task in machine] for machine in self.schedule]}
         return f"{self.makespan}"
 
     def get_sequences(self) -> tuple[list,list,list]:

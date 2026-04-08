@@ -2,8 +2,9 @@ import os
 import time
 import sys
 import pandas as pd
-from src.util.benchmark_parser import WorkerBenchmarkParser
 
+# NOTE: this block is only here for convenience, so that it is possible to run this file directly
+# its possible to remove this block and just run this file using "python -m src.benchmarker"
 from pathlib import Path
 from typing import TYPE_CHECKING
 # Support direct execution (python src/benchmarker.py) by ensuring repo root is on sys.path.
@@ -11,6 +12,8 @@ if __package__ is None or __package__ == "":
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
+
+from src.util.benchmark_parser import WorkerBenchmarkParser
 
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
@@ -54,15 +57,16 @@ class BenchmarkRunner:
         print(f"\nResults saved to {output_file}")
 
 def main() -> None:
-    from src.core.fjssp_algorithm import FJSSPAlgorithm
     from src.algorithms.ga import GASolver, Strategy
     from src.algorithms.lahc import LAHCSolver
+    from src.algorithms.greedy import GreedyFJSSPWSolver
 
     runner = BenchmarkRunner("instances/fjssp-w")
 
     algorithms: dict[str, FJSSPAlgorithm] = {
         "LAHC": LAHCSolver(L=50, max_iters=10_000),
         "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
+        "GREEDY": GreedyFJSSPWSolver()
     }
 
     runner.run_benchmark(algorithms)

@@ -1,5 +1,5 @@
 from enum import Enum
-from src.core.candidate import *
+from src.core.candidate import Candidate, Operation, WorkerEncoding
 from src.core.fjssp_algorithm import FJSSPAlgorithm
 import random
 
