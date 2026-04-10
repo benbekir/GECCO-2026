@@ -21,13 +21,18 @@ class BenchmarkRunner:
         self.files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
         self.results = []
 
-    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"]):
+    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int):
         """
         algorithms: A dictionary where key is the name and value is the function 
                     that takes a filepath and returns (best_candidate, history)
         """
         parser = WorkerBenchmarkParser()
+        progress = 0
+        total = len(self.files)
         for filename in self.files:
+            progress += 1
+            print(f"Running instance {progress}/{total}...")
+
             filepath = os.path.join(self.instances_dir, filename)
             print(f"\n--- Benchmarking Instance: {filename} ---")
             
@@ -35,18 +40,20 @@ class BenchmarkRunner:
                 print(f"Running {name}...", end=" ", flush=True)
                 
                 start_time = time.time()
-                encoding = parser.parse_benchmark(filepath)
-                best_candidate, history = algorithm.solve(encoding)
-                duration = time.time() - start_time
+                avg_candidate_makespan = 0
+                for _ in range(k):
+                    encoding = parser.parse_benchmark(filepath)
+                    best_candidate, _ = algorithm.solve(encoding)
+                    avg_candidate_makespan += best_candidate.makespan / k
+                avg_duration = (time.time() - start_time) / k
                 
                 self.results.append({
                     "Instance": filename,
                     "Algorithm": name,
-                    "Best Makespan": best_candidate.makespan,
-                    "Runtime (s)": round(duration, 2),
-                    "Final Gen": history[-1][0] if history else 0
+                    "Average Makespan": avg_candidate_makespan,
+                    "Average Runtime (s)": round(avg_duration, 2)
                 })
-                print(f"Done. Makespan: {best_candidate.makespan}")
+                print(f"Done. Avg. Makespan: {avg_candidate_makespan}")
 
     def get_summary(self):
         return pd.DataFrame(self.results)
@@ -61,6 +68,8 @@ def main() -> None:
     from src.algorithms.lahc import LAHCSolver
     from src.algorithms.greedy import GreedyFJSSPWSolver
 
+    K = 10
+
     runner = BenchmarkRunner("instances/fjssp-w")
 
     algorithms: dict[str, FJSSPAlgorithm] = {
@@ -69,14 +78,29 @@ def main() -> None:
         "GREEDY": GreedyFJSSPWSolver()
     }
 
-    runner.run_benchmark(algorithms)
+    runner.run_benchmark(algorithms, k=K)
     
     summary_df = runner.get_summary()
     print("\nFinal Comparison:")
-    print(summary_df.pivot(index="Instance", columns="Algorithm", values="Best Makespan"))
+    print(summary_df.pivot(index="Instance", columns="Algorithm", values="Average Makespan"))
     
     runner.save_results()
 
+    import matplotlib.pyplot as plt
 
+    pivot_df = summary_df.pivot(index='Instance', columns='Algorithm', values='Average Makespan')
+    ax = pivot_df.plot(kind='bar', figsize=(10, 6), width=0.8)
+
+    plt.title(f'Comparison of Algorithm Performance ({K} runs)', fontsize=14)
+    plt.xlabel('Instance Name', fontsize=12)
+    plt.ylabel('Average Makespan', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.legend(title='Algorithm')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    plt.tight_layout()
+    plt.savefig('algorithm_comparison.png', dpi=300)
+    plt.show()
+    
 if __name__ == "__main__":
     main()
