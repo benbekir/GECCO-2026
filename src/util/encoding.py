@@ -141,14 +141,6 @@ class WorkerEncoding:
         return WorkerEncoding(duration_copy, job_sequence_copy)
     
     # START: CUSTOM CODE
-    def get_machines_for_operation(self, operation_index: int):
-        machines = []
-        for i in range(0, self.__durations.shape[1]): 
-            if self.__durations[operation_index, i].sum() > 0:
-                machines.append(i)
-                
-        return machines
-
     def get_operations_for_job(self, job_index: int):
         return self.__operations_by_job[job_index]
     # END
