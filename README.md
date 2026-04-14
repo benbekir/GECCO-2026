@@ -6,6 +6,7 @@ The link to the original competition repository can be found [HERE](https://gith
 The goal is to find a schedule that minimizes the makespan while respecting the constraints of machine and worker availability.
 
 ## Data format
+The 30 competition instances can be found under *instances/fjssp-w*, each of which is a text file containing the description of a FJSSP-W instance. The format of these files is as follows:
 ### FJSSP-W
 #### Header line
 1. Number of jobs
@@ -22,6 +23,3 @@ The goal is to find a schedule that minimizes the makespan while respecting the 
         3. For each worker:
             1. Worker index
             2. Duration
-
-## Questions
-1. Is the FJSSP instance folder of any relevance to us? We currently believe that it does not contain instance that need to be solved for the competition. Is that correct?
