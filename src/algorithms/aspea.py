@@ -1,5 +1,5 @@
 # Generated from: Algorithms.ipynb
-# Converted at: 2026-04-08T13:17:04.331Z
+# Converted at: 2026-04-13T14:44:26.449Z
 # Next step (optional): refactor into modules & generate tests with RunCell
 # Quick start: pip install runcell
 
@@ -7,6 +7,10 @@ from math import sqrt as sqrt
 import matplotlib.pyplot as plt
 import random
 import numpy as np 
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join('..')))
 
 # # Helper Functions
 
@@ -14,31 +18,39 @@ import numpy as np
 from util.encoding import WorkerEncoding
 from util.benchmark_parser import WorkerBenchmarkParser
 import random as random
+from pathlib import Path
+
 class Instance:
     def __init__(self,encoding:WorkerEncoding,options_map):
         self.encoding=encoding
         self.options_map=options_map
         self.operation_sequence=list(encoding.job_sequence())
         random.shuffle(self.operation_sequence)
-        self.worker_machine_sequence=[]
-        for op_idx in range(encoding.n_operations()):
+        n_total_ops = encoding.n_operations()
+        self.worker_machine_sequence = [None] * n_total_ops
+        for op_idx in range(n_total_ops):
             choice=random.choice(self.options_map[op_idx])
-            self.worker_machine_sequence.append(choice)
+            self.worker_machine_sequence[op_idx] = choice
         self.objectives = {"makespan": float('inf'), "balance": float('inf')} 
         self.fitness=0.0
         
     @staticmethod
-    def create_options(w_encoding:WorkerEncoding):
-        options={}
-        for op_idx in range(w_encoding.n_operations()):
-            options[op_idx]=[]
-            machines=w_encoding.get_machines_for_operation(op_idx)
-            for machine_idx in machines:
-                worker=w_encoding.get_workers_for_operation_on_machine(op_idx,machine_idx)
-                for worker_idx in worker:
-                    duration=w_encoding.durations()[op_idx,machine_idx,worker_idx]
-                    options[op_idx].append((machine_idx,worker_idx,duration))
-        return options
+    def create_options(encoding: WorkerEncoding):
+        options_map = {}
+        n_ops = encoding.n_operations()
+        
+        for op_idx in range(n_ops):
+            valid_pairs = []
+            usable_machines = encoding.get_machines_for_operation(op_idx)
+            
+            for m_idx in usable_machines:
+                usable_workers = encoding.get_workers_for_operation_on_machine(op_idx, m_idx)
+                
+                for w_idx in usable_workers:
+                    valid_pairs.append((m_idx, w_idx))
+                    
+            options_map[op_idx] = valid_pairs
+        return options_map
     def swapping(self,mutation_rate:float):
         #Here we perform the swapping of the tuples
         for op_index in range(len(self.worker_machine_sequence)):
@@ -100,15 +112,6 @@ class Instance:
 
         return child
 
-parser = WorkerBenchmarkParser()
-encoding = parser.parse_benchmark(r'instances/fjssp-w/3_DPpaulli_1_workers.fjs')
-
-# Call the static method
-all_options = Instance.create_options(encoding)
-inst=Instance(encoding,all_options)
-print(len(inst.operation_sequence))
-print(len(inst.worker_machine_sequence))
-print(inst.operation_sequence.count(0))
   
 
 # # SPEA Algorithm
@@ -117,48 +120,28 @@ print(inst.operation_sequence.count(0))
 # # Constraints
 
 
+import util.evaluation as evaluation
+
 def calculate_fitness(instance:Instance):
-    n_machines=instance.encoding.n_machines()
-    n_workers=instance.encoding.n_workers()
-    n_jobs=instance.encoding.n_jobs()
-    worker_timer=[0]*n_workers
-    machines_timer=[0]*n_machines
-    jobs_timer=[0]*n_jobs
-    job_counter=[0]*n_jobs
-    worker_balance=[0]*n_workers
 
-    job_start_indices = [0] * n_jobs
-    current_offset = 0
-    for j in range(n_jobs):
-        job_start_indices[j] = current_offset
-        ops = instance.encoding.get_operations_for_job(j)
-        
-        count = len(ops) if isinstance(ops, list) else ops
-        current_offset += count
+    m_assignments = [item[0] for item in instance.worker_machine_sequence]
 
-    for job_id in instance.operation_sequence:
-        job_num=job_counter[job_id]
+    w_assignments = [item[1] for item in instance.worker_machine_sequence]
+   
 
-        operation_index=job_start_indices[job_id]+job_num
+    start_times, m_fixed, w_fixed = evaluation.translate(
 
-        machine,worker,duration=instance.worker_machine_sequence[operation_index]
+    instance.operation_sequence,m_assignments,w_assignments,
 
-        start_time=max(worker_timer[worker],machines_timer[machine],jobs_timer[job_id])
-        end_time=start_time+duration
-        
-        worker_timer[worker]=end_time
-        machines_timer[machine]=end_time
-        jobs_timer[job_id]=end_time
-        worker_balance[worker]+=duration
+    instance.encoding.durations() 
 
-        job_counter[job_id]+=1
+)
+    val_makespan = evaluation.makespan(start_times, m_fixed, w_fixed, instance.encoding.durations())
 
-    makespan=np.max(jobs_timer)
+    val_balance = evaluation.workload_balance(m_fixed, w_fixed, instance.encoding.durations())
 
-    worker_balance_fitness=np.std(worker_balance)
-    
-    return makespan,worker_balance_fitness
 
+    return float(val_makespan), float(np.sum(val_balance))
 
 # # Algorithm
 
@@ -276,13 +259,26 @@ def binary_tournament(archive, population_size,mutation_rate,daredevil_mode):
       population.append(child_genes)
    return population
 
-def run():
+if __name__ == "__main__":
+   
+    root_path = Path('..').resolve().parent 
+    instances_dir = root_path / "instances" / "fjssp-w"
+    parser = WorkerBenchmarkParser()
+    encoding = parser.parse_benchmark(instances_dir / "0_BehnkeGeiger_42_workers.fjs")
+
+    # Call the static method
+    all_options = Instance.create_options(encoding)
+    inst=Instance(encoding,all_options)
+    print(len(inst.operation_sequence))
+    print(len(inst.worker_machine_sequence))
+    print(inst.operation_sequence.count(0))
     POP_SIZE = 200
     ARCHIVE_SIZE = 50
     MAX_GENERATIONS = 500
     BASE_MUTATION= 0.1
     TRACKER_LIMIT_MUTATION=50
     TRACKER_LIMIT_NUKE=150
+    DAREDEVIL_FLAG=False
 
     history_best_makespan = []
     history_avg_makespan = []
@@ -333,6 +329,3 @@ def run():
             current_mutation=BASE_MUTATION
         is_stuck=tracker>TRACKER_LIMIT_MUTATION
         population = binary_tournament(archive, POP_SIZE,current_mutation,daredevil_mode=is_stuck)
-
-    print("\n Test Run Complete.")
-    return global_best_makespan,history_best_makespan

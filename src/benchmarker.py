@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from src.util.benchmark_parser import WorkerBenchmarkParser
 
+
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
         self.instances_dir = instances_dir
@@ -67,15 +68,17 @@ def main() -> None:
     from src.algorithms.ga import GASolver, Strategy
     from src.algorithms.lahc import LAHCSolver
     from src.algorithms.greedy import GreedyFJSSPWSolver
+    from src.algorithms.spea import SPEA2Solver
 
     K = 10
 
     runner = BenchmarkRunner("instances/fjssp-w")
 
     algorithms: dict[str, FJSSPAlgorithm] = {
-        "LAHC": LAHCSolver(L=50, max_iters=10_000),
-        "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
-        "GREEDY": GreedyFJSSPWSolver()
+        #"LAHC": LAHCSolver(L=50, max_iters=10_000),
+        #"GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
+        #"GREEDY": GreedyFJSSPWSolver(),
+        "SPEA-II": SPEA2Solver()
     }
 
     runner.run_benchmark(algorithms, k=K)
