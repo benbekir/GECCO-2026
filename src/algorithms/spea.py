@@ -5,13 +5,14 @@ import util.evaluation as evaluation
 import random
 import numpy as np
 from math import sqrt
+import optuna
 
 class SPEA2Solver(FJSSPAlgorithm):
-    def __init__(self, pop_size=200, archive_size=50, max_generations=500):
+    def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1):
         self.pop_size = pop_size
         self.archive_size = archive_size
         self.max_generations = max_generations
-        self.base_mutation = 0.1
+        self.base_mutation = mutation_rate
 
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
@@ -29,6 +30,7 @@ class SPEA2Solver(FJSSPAlgorithm):
             archive = environmental_selection(combined, self.archive_size)
             
             current_best = min(ind.makespan for ind in archive)
+         
             history_best_makespan.append(current_best)
             SIGNIFICANCE_THRESHOLD = max(5, global_best_makespan * 0.005)
             if global_best_makespan - current_best > SIGNIFICANCE_THRESHOLD:
