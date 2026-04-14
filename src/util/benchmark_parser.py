@@ -62,15 +62,21 @@ class WorkerBenchmarkParser:
         n_machines = int(info[1])
         n_workers = int(round(float(info[2])))
         n_overall_operations = 0
-        operations_by_job = [0] * n_jobs
         lines = [line.split() for line in file_content[1:]]
+        
+        # START: CUSTOM CODE
+        operations_by_job = [0] * n_jobs
+        # END
 
         for i in range(1, len(file_content)):
             line = file_content[i].split(' ')
             lines[i - 1] = line
+            n_overall_operations += int(line[0])
+            
+            # START: CUSTOM CODE
             operations_count = int(line[0])
             operations_by_job[i-1] = operations_count
-            n_overall_operations += operations_count
+            # END
         
         durations = np.zeros((n_overall_operations, n_machines, n_workers), dtype=int)
         operation_index = 0
@@ -103,6 +109,7 @@ class WorkerBenchmarkParser:
                         durations[operation_index, machine - 1, worker - 1] = duration
                 
                 operation_index += 1
-                
-        return WorkerEncoding(durations, job_sequence, operations_by_job, n_jobs, n_machines, n_workers)
-
+        
+        # START: CUSTOM CODE
+        return WorkerEncoding(durations, job_sequence, operations_by_job, n_machines, n_workers)
+        # END

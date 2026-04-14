@@ -56,13 +56,18 @@ class Encoding:
         return Encoding(duration_copy, job_sequence_copy)
 
 class WorkerEncoding:
-    def __init__(self, durations: list, job_sequence: list, operations_by_job: list, n_jobs: int, n_machines: int, n_workers: int) -> None:
+    def __init__(self, durations: list, job_sequence: list, operations_by_job: list, n_machines: int, n_workers: int) -> None:
         self.__durations = durations
         self.__job_sequence = job_sequence
+        self.__n_jobs = 1
+        for i in range(1, len(self.__job_sequence)):
+            if self.__job_sequence[i] != self.__job_sequence[i - 1]: 
+                self.__n_jobs += 1
+
+        # START: CUSTOM CODE
         self.__operations_by_job = operations_by_job
-        self.__n_jobs = n_jobs
-        self.__n_machines = n_machines
         self.__n_workers = n_workers
+        # END
 
     def job_sequence(self):
         return self.__job_sequence
@@ -71,14 +76,17 @@ class WorkerEncoding:
         return self.__durations.shape[0]
     
     def n_machines(self):
-        return self.__n_machines
-    
+        return self.__durations.shape[1]
+
+
     def n_jobs(self):
         return self.__n_jobs
     
+    # START: CUSTOM CODE
     def n_workers(self):
         return self.__n_workers
-    
+    # END
+
     def durations(self):
         return self.__durations
 
@@ -113,20 +121,6 @@ class WorkerEncoding:
 
         return workers
     
-    def get_machines_for_operation(self, operation_index: int):
-        machines = []
-        for i in range(0, self.__durations.shape[1]): 
-            if self.__durations[operation_index, i].sum() > 0:
-                machines.append(i)
-                
-        return machines
-
-    def get_operations_for_job(self, job_index: int):
-        return self.__operations_by_job[job_index]
-    
-    def get_operations_for_all_jobs(self):
-        return self.__operations_by_job
-    
     def is_possible(self, operation: int, machine: int, worker: int):
         return self.__durations[operation, machine, worker] > 0
 
@@ -145,3 +139,16 @@ class WorkerEncoding:
             job_sequence_copy[i] = self.__job_sequence[i]
 
         return WorkerEncoding(duration_copy, job_sequence_copy)
+    
+    # START: CUSTOM CODE
+    def get_machines_for_operation(self, operation_index: int):
+        machines = []
+        for i in range(0, self.__durations.shape[1]): 
+            if self.__durations[operation_index, i].sum() > 0:
+                machines.append(i)
+                
+        return machines
+
+    def get_operations_for_job(self, job_index: int):
+        return self.__operations_by_job[job_index]
+    # END
