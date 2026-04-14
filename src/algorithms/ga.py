@@ -14,14 +14,14 @@ class GASolver(FJSSPAlgorithm):
         self.L = kwargs.get('L', 50)
         self.max_generations = kwargs.get('max_generations', 50)
 
-    def __create_candidate(self, encoding: WorkerEncoding, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_op_by_job, last_operation_by_job, active_jobs) -> Candidate:
+    def __create_candidate(self, encoding: WorkerEncoding, machines_for_ops, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_op_by_job, last_operation_by_job, active_jobs) -> Candidate:
         # populate schedule for each machine
         while active_jobs:
             selected_job = random.choice(active_jobs)
             selected_op = next_op_by_job[selected_job]
 
             # select random viable machine and worker
-            usable_machines = encoding.get_machines_for_operation(selected_op)
+            usable_machines = machines_for_ops[selected_op]
             selected_machine = random.choice(usable_machines)
             usable_workers = encoding.get_workers_for_operation_on_machine(selected_op, selected_machine)
             selected_worker = random.choice(usable_workers)
@@ -43,7 +43,7 @@ class GASolver(FJSSPAlgorithm):
         
         return Candidate(schedule, ordered_ops, encoding)
 
-    def __get_initial_candidates(self, encoding: WorkerEncoding, last_operation_by_job):
+    def __get_initial_candidates(self, encoding: WorkerEncoding, machines_for_ops, last_operation_by_job):
         num_jobs = encoding.n_jobs()
         num_machines = encoding.n_machines()
         num_workers = encoding.n_workers()
@@ -69,11 +69,11 @@ class GASolver(FJSSPAlgorithm):
 
             # jobs that still have tasks left
             active_jobs = [index for index in range(num_jobs)]
-            candidate = self.__create_candidate(encoding, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_operation_by_job, last_operation_by_job, active_jobs)
+            candidate = self.__create_candidate(encoding, machines_for_ops, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_operation_by_job, last_operation_by_job, active_jobs)
             candidates.append(candidate)
         return candidates
 
-    def __mutate(self, encoding: WorkerEncoding, parents: list[Candidate], last_operation_by_job) -> list[Candidate]:
+    def __mutate(self, encoding: WorkerEncoding, machines_for_ops, parents: list[Candidate], last_operation_by_job) -> list[Candidate]:
         num_jobs = encoding.n_jobs()
         num_machines = encoding.n_machines()
         num_workers = encoding.n_workers()
@@ -121,7 +121,7 @@ class GASolver(FJSSPAlgorithm):
                 # only jobs with remaining tasks are active
                 active_jobs = [job_index for job_index in range(num_jobs) if next_operation_by_job[job_index] <= last_operation_by_job[job_index]]
                 
-                candidate = self.__create_candidate(encoding, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_operation_by_job, last_operation_by_job, active_jobs)
+                candidate = self.__create_candidate(encoding, machines_for_ops, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_operation_by_job, last_operation_by_job, active_jobs)
                 children.append(candidate)
         return children
 
@@ -134,11 +134,12 @@ class GASolver(FJSSPAlgorithm):
             operation_index += ops_for_current_job
             last_operation_by_job[i] = operation_index - 1
 
-        parents = self.__get_initial_candidates(encoding, last_operation_by_job)
+        machines_for_ops = encoding.get_all_machines_for_all_operations()
+        parents = self.__get_initial_candidates(encoding, machines_for_ops, last_operation_by_job)
         offsprings = list[Candidate]()
         history = []
         for gen in range(self.max_generations):
-            offsprings = self.__mutate(encoding, parents, last_operation_by_job)
+            offsprings = self.__mutate(encoding, machines_for_ops, parents, last_operation_by_job)
 
             if self.strategy == Strategy.PLUS:
                 offsprings.extend(parents)
@@ -160,3 +161,9 @@ class GASolver(FJSSPAlgorithm):
 
         parents.sort(key=lambda x: x.makespan) 
         return parents[0], history
+
+if __name__ == "__main__":
+    from src.util.benchmark_parser import WorkerBenchmarkParser
+    encoding = WorkerBenchmarkParser().parse_benchmark("instances/fjssp-w/5_Kacem_3_workers.fjs")
+    c, h = GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=500).solve(encoding)
+    print(c.makespan)

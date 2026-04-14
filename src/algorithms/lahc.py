@@ -8,7 +8,7 @@ class LAHCSolver(FJSSPAlgorithm):
         self.L = kwargs.get('L', 50)
         self.max_iters = kwargs.get('max_iters', 10000)
 
-    def __get_initial_candidate(self, encoding: WorkerEncoding, last_operation_by_job):
+    def __get_initial_candidate(self, encoding: WorkerEncoding, machines_for_ops, last_operation_by_job):
         num_jobs = encoding.n_jobs()
         num_machines = encoding.n_machines()
         num_workers = encoding.n_workers()
@@ -39,7 +39,7 @@ class LAHCSolver(FJSSPAlgorithm):
             selected_op = next_operation_by_job[selected_job]
 
             # select random viable machine and worker
-            usable_machines = encoding.get_machines_for_operation(selected_op)
+            usable_machines = machines_for_ops[selected_op]
             selected_machine = random.choice(usable_machines)
             usable_workers = encoding.get_workers_for_operation_on_machine(selected_op, selected_machine)
             selected_worker = random.choice(usable_workers)
@@ -61,7 +61,7 @@ class LAHCSolver(FJSSPAlgorithm):
     
         return Candidate(schedule, ordered_ops, encoding)
 
-    def __get_neighbor(self, encoding: WorkerEncoding, candidate: Candidate):
+    def __get_neighbor(self, encoding: WorkerEncoding, machines_for_ops, candidate: Candidate):
         new_ordered_ops = copy.deepcopy(candidate.ordered_ops)
         idx1 = random.randrange(len(new_ordered_ops))
         
@@ -70,7 +70,7 @@ class LAHCSolver(FJSSPAlgorithm):
         if mutation_type < 0.4:
             # change machine and worker assignment
             op = new_ordered_ops[idx1]
-            usable_machines = encoding.get_machines_for_operation(op.operation_index)
+            usable_machines = machines_for_ops[op.operation_index]
             new_m = random.choice(usable_machines)
             usable_workers = encoding.get_workers_for_operation_on_machine(op.operation_index, new_m)
             new_w = random.choice(usable_workers)
@@ -114,7 +114,9 @@ class LAHCSolver(FJSSPAlgorithm):
             operation_index += ops_for_current_job
             last_operation_by_job[i] = operation_index - 1
 
-        candidate = self.__get_initial_candidate(encoding, last_operation_by_job)
+        machines_for_ops = encoding.get_all_machines_for_all_operations()
+
+        candidate = self.__get_initial_candidate(encoding, machines_for_ops, last_operation_by_job)
         current = candidate
         best = candidate
         
@@ -122,7 +124,7 @@ class LAHCSolver(FJSSPAlgorithm):
         progression = []
 
         for i in range(self.max_iters):
-            candidate = self.__get_neighbor(encoding, current)
+            candidate = self.__get_neighbor(encoding, machines_for_ops, current)
             v = i % self.L
 
             # acceptance criteria
@@ -138,3 +140,9 @@ class LAHCSolver(FJSSPAlgorithm):
                 print(f"LAHC Iter {i}: Best Makespan = {best.makespan}")
 
         return best, progression
+
+if __name__ == "__main__":
+    from src.util.benchmark_parser import WorkerBenchmarkParser
+    encoding = WorkerBenchmarkParser().parse_benchmark("instances/fjssp-w/6_Fattahi_14_workers.fjs")
+    c, h = LAHCSolver(L=50, max_iters=5000).solve(encoding)
+    print(c.makespan)
