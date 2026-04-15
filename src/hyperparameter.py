@@ -28,36 +28,49 @@ class Algorithms(Enum):
      LAHC=2
      GOGETA=3
      GA=4
-
      
 TARGET_FILES = [
-    "0_BehnkeGeiger_42_workers.fjs",
+    # 100 60 90
+    "0_BehnkeGeiger_60_workers.fjs",
+    # 30 10 15 
+    "1_Brandimarte_12_workers.fjs",
+    # 20 5 7 
+    "2a_Hurink_sdata_18_workers.fjs",
+    # 15 15 22 
+    "2a_Hurink_sdata_40_workers.fjs",
+    # 15 10 15
     "2c_Hurink_rdata_28_workers.fjs",
-    "3_DPpaulli_15_workers.fjs"
+    # 6 6 9
+    "2b_Hurink_edata_1_workers.fjs"
 ]
 def create_objective(algorithm_choice:Algorithms):
-    def objective(trial):
+    def objective(trial: optuna.trial.Trial):
+        solver: FJSSPAlgorithm = None
         if algorithm_choice==Algorithms.SPEA2:
             population=trial.suggest_int("population_size",150,400)
             archive=trial.suggest_int("archive_size",50,200)
             mutation_rate=trial.suggest_float("mutation_rate",0.01,0.2)
             mut_limit = trial.suggest_int("tracker_limit_mutation", 15, 60, step=5)
             nuke_limit = trial.suggest_int("tracker_limit_nuke", 60, 150, step=10)
+            print(f"Chose population={population}, archive={archive}, mutation_rate={mutation_rate}, mut_limit={mut_limit}, nuke_limit={nuke_limit}.")
             solver=SPEA2Solver(pop_size=population,archive_size=archive,max_generations=150,mutation_rate=mutation_rate,mutation_limit=mut_limit,nuke_limit=nuke_limit)
 
         elif algorithm_choice==Algorithms.LAHC:
             L=trial.suggest_int("L",10,500)
-            max_iters=trial.suggest_int("Max_iterations",5000,50000,log=True)
+            max_iters=trial.suggest_int("Max_iterations",5000,75000,log=True)
+            print(f"Chose L={L}, max_iters={max_iters}.")
             solver=LAHCSolver(L=L,max_iters=max_iters)
 
         elif algorithm_choice==Algorithms.GA:
-            strategy = trial.suggest_categorical("strategy",[Strategy.PLUS, Strategy.COMMA])
+            strategy = trial.suggest_categorical("strategy", choices=[Strategy.PLUS, Strategy.COMMA])
             M = trial.suggest_int("M",10,50)
             L = trial.suggest_int("L",50,200)
+            print(f"Chose Strategy={strategy}, M={M}, L={L}.")
             solver= GASolver(strategy=strategy,M=M,L=L,max_generations=500)
              
         results=[]
         for file in TARGET_FILES:
+                print(f"Running {file}...")
                 filepath = os.path.join(instances_dir, file)
                 encoding = parser.parse_benchmark(filepath)
                 best_candidate,_=solver.solve(encoding)
@@ -66,12 +79,10 @@ def create_objective(algorithm_choice:Algorithms):
     return objective
 
 if __name__ == "__main__":
-    MY_CHOICE = Algorithms.GA
+    MY_CHOICE = Algorithms.LAHC
     
     study = optuna.create_study(direction="minimize")
-    
     func = create_objective(MY_CHOICE)
-    
     study.optimize(func, n_trials=50)
     
     print(f"Best params for {MY_CHOICE.name}: {study.best_params}")
