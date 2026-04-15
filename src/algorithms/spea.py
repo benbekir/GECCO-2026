@@ -1,7 +1,7 @@
 from src.core.fjssp_algorithm import FJSSPAlgorithm
 from src.core.candidate import Candidate, Operation,WorkerEncoding
 from src.algorithms.aspea import Instance, density_function, environmental_selection,binary_tournament,calculate_fitness
-import util.evaluation as evaluation
+import src.util.evaluation as evaluation
 import random
 import numpy as np
 from math import sqrt

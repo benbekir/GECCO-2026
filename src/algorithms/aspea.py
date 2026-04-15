@@ -15,8 +15,8 @@ sys.path.append(os.path.abspath(os.path.join('..')))
 # # Helper Functions
 
 
-from util.encoding import WorkerEncoding
-from util.benchmark_parser import WorkerBenchmarkParser
+from src.util.encoding import WorkerEncoding
+from src.util.benchmark_parser import WorkerBenchmarkParser
 import random as random
 from pathlib import Path
 
@@ -120,7 +120,7 @@ class Instance:
 # # Constraints
 
 
-import util.evaluation as evaluation
+import src.util.evaluation as evaluation
 
 def calculate_fitness(instance:Instance):
 
