@@ -95,7 +95,7 @@ if __name__ == "__main__":
     if "strategy" in output_data["best_params"]:
         output_data["best_params"]["strategy"] = str(output_data["best_params"]["strategy"])
 
-    filename = f"best_params_{MY_CHOICE.name.lower()}.json"
+    filename = f"results/best_params_{MY_CHOICE.name.lower()}.json"
 
     with open(filename, "w") as f:
         json.dump(output_data, f, indent=4)
