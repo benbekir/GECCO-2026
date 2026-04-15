@@ -50,7 +50,10 @@ class SPEA2Solver(FJSSPAlgorithm):
                 tracker = 0
                 current_mutation = self.base_mutation
             elif tracker > self.mutation_limit:
-                current_mutation = 0.6
+                stuck_duration = tracker - self.mutation_limit
+                max_stuck = self.nuke_limit - self.mutation_limit
+                ramp = (stuck_duration / max_stuck)
+                current_mutation = self.base_mutation + (0.2 - self.base_mutation) * ramp
             else:
                 current_mutation = self.base_mutation
 
