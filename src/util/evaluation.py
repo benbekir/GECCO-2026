@@ -10,10 +10,11 @@ def workload_balance(machine_assignments : list[int], worker_assignments : list[
     for i in range(len(worker_assignments)):
         working_time[worker_assignments[i]] += durations[i][machine_assignments[i]][worker_assignments[i]]
     mean_working_time = np.mean(working_time)
-    result = 0.0
-    for i in range(len(working_time)):
-        result += np.pow((mean_working_time - working_time), 2)
-    return result
+    # START: CUSTOM CODE
+    working_time_arr = np.array(working_time)
+    result = np.sum((working_time_arr - mean_working_time) ** 2)
+    return float(result)
+    # END
 
 def makespan_fjssp(start_times : list[int], machine_assignments : list[int], durations : list[list[list[int]]]) -> float:
     return np.max([start_times[i] + durations[i][machine_assignments[i]] for i in range(len(start_times))])

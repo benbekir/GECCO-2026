@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
 
 from src.util.benchmark_parser import WorkerBenchmarkParser
+from src.util.evaluation import workload_balance
 
 
 class BenchmarkRunner:
@@ -23,51 +24,49 @@ class BenchmarkRunner:
         self.files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
         self.results = []
 
-    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int,filter_list: list[str] = None):
-        """
-        algorithms: A dictionary where key is the name and value is the function 
-                    that takes a filepath and returns (best_candidate, history)
-        """
+    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int, filter_list: list[str] = []):
         parser = WorkerBenchmarkParser()
-        progress = 0
-        total = len(self.files)
-        for filename in self.files:
-            if filter_list and filename not in filter_list:
-                continue
-            progress += 1
-            print(f"Running instance {progress}/{total}...")
+        total = len(filter_list) if filter_list else len(self.files)
 
-            filepath = os.path.join(self.instances_dir, filename)
-            print(f"\n--- Benchmarking Instance: {filename} ---")
-            
-            for name, algorithm in algorithms.items():
-                print(f"Running {name}...", end=" ", flush=True)
-                
-                start_time = time.time()
-                avg_candidate_makespan = 0
-                raw_makespan=[]
-                for _ in range(k):
+        for name, algorithm in algorithms.items():
+            print(f"Running {name}...", end=" ", flush=True)
+            self.results = [] 
+            progress = 0
+
+            for filename in self.files:
+                if filter_list and filename not in filter_list:
+                    continue
+
+                progress += 1
+                filepath = os.path.join(self.instances_dir, filename)
+                print(f"\nInstance {filename} ({progress}/{total})")
+
+                for run_idx in range(k):
+                    start_time = time.time()
+                    
                     encoding = parser.parse_benchmark(filepath)
                     best_candidate, _ = algorithm.solve(encoding)
-                    raw_makespan.append(best_candidate.makespan)
+                    
+                    # Extract metrics
+                    _, machines, workers = best_candidate.get_sequences()
+                    c_workload_balance = workload_balance(machines, workers, encoding.durations())
+                    duration = time.time() - start_time
+                    
+                    # Store each run as its own row
+                    self.results.append({
+                        "Algorithm": name,
+                        "Instance": filename,
+                        "Run_ID": run_idx + 1,
+                        "Makespan": best_candidate.makespan,
+                        "Workload Balance": c_workload_balance,
+                        "Runtime (s)": round(duration, 4)
+                    })
+                print(f"Done {k} runs.")
 
-                avg_candidate_makespan =sum(raw_makespan)/k
-                avg_duration = (time.time() - start_time) / k
-                
-                self.results.append({
-                    "Instance": filename,
-                    "Algorithm": name,
-                    "Average Makespan": avg_candidate_makespan,
-                    "Raw Makespans":raw_makespan,
-                    "Average Runtime (s)": round(avg_duration, 2)
-                })
-                print(f"Done. Avg. Makespan: {avg_candidate_makespan}")
-
-    def get_summary(self):
-        return pd.DataFrame(self.results)
+            self.save_results(output_file=f"results/{name}.csv")
 
     def save_results(self, output_file="benchmark_results.csv"):
-        df = self.get_summary()
+        df = pd.DataFrame(self.results)
         df.to_csv(output_file, index=False)
         print(f"\nResults saved to {output_file}")
 
@@ -123,17 +122,15 @@ def main() -> None:
     from src.algorithms.ga import GASolver, Strategy
     from src.algorithms.lahc import LAHCSolver
     from src.algorithms.greedy import GreedyFJSSPWSolver
-    from src.algorithms.spea import SPEA2Solver
+    #from src.algorithms.spea import SPEA2Solver
 
     K = 10
-
     runner = BenchmarkRunner("instances/fjssp-w")
-
     algorithms: dict[str, FJSSPAlgorithm] = {
         "LAHC": LAHCSolver(L=50, max_iters=10_000),
         "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
         "GREEDY": GreedyFJSSPWSolver(),
-        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
+        #"SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
 
     target = ["3_DPpaulli_15_workers.fjs"]
