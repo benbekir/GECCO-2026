@@ -8,11 +8,13 @@ from math import sqrt
 import optuna
 
 class SPEA2Solver(FJSSPAlgorithm):
-    def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1):
+    def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1,mutation_limit=50,nuke_limit=150):
         self.pop_size = pop_size
         self.archive_size = archive_size
         self.max_generations = max_generations
         self.base_mutation = mutation_rate
+        self.nuke_limit=nuke_limit
+        self.mutation_limit=mutation_limit
 
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
@@ -40,19 +42,19 @@ class SPEA2Solver(FJSSPAlgorithm):
             else:
                 tracker += 1
 
-            if tracker > 150:
+            if tracker > self.nuke_limit:
                 archive = [min(archive, key=lambda x: x.makespan)]
                 population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
                 for ind in population:
                     ind.makespan, ind.worker_balance_fitness = calculate_fitness(ind)
                 tracker = 0
                 current_mutation = self.base_mutation
-            elif tracker > 50:
+            elif tracker > self.mutation_limit:
                 current_mutation = 0.6
             else:
                 current_mutation = self.base_mutation
 
-            is_stuck = tracker > 50
+            is_stuck = tracker > self.mutation_limit
             population = binary_tournament(archive, self.pop_size, current_mutation, is_stuck)
 
         best_instance = min(archive, key=lambda x: x.makespan)

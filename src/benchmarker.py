@@ -22,7 +22,7 @@ class BenchmarkRunner:
         self.files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
         self.results = []
 
-    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int):
+    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int,filter_list: list[str] = None):
         """
         algorithms: A dictionary where key is the name and value is the function 
                     that takes a filepath and returns (best_candidate, history)
@@ -31,6 +31,8 @@ class BenchmarkRunner:
         progress = 0
         total = len(self.files)
         for filename in self.files:
+            if filter_list and filename not in filter_list:
+                continue
             progress += 1
             print(f"Running instance {progress}/{total}...")
 
@@ -75,13 +77,14 @@ def main() -> None:
     runner = BenchmarkRunner("instances/fjssp-w")
 
     algorithms: dict[str, FJSSPAlgorithm] = {
-        #"LAHC": LAHCSolver(L=50, max_iters=10_000),
-        #"GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
-        #"GREEDY": GreedyFJSSPWSolver(),
-        "SPEA-II": SPEA2Solver()
+        "LAHC": LAHCSolver(L=50, max_iters=10_000),
+        "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
+        "GREEDY": GreedyFJSSPWSolver(),
+        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
 
-    runner.run_benchmark(algorithms, k=K)
+    target = ["2d_Hurink_vdata_30_workers.fjs", "2a_Hurink_sdata_54_workers.fjs", "3_DPpaulli_15_workers.fjs"]
+    runner.run_benchmark(algorithms, k=K, filter_list=target)
     
     summary_df = runner.get_summary()
     print("\nFinal Comparison:")

@@ -38,10 +38,10 @@ class Instance:
     def create_options(encoding: WorkerEncoding):
         options_map = {}
         n_ops = encoding.n_operations()
-        
+        machines=encoding.get_all_machines_for_all_operations()
         for op_idx in range(n_ops):
             valid_pairs = []
-            usable_machines = encoding.get_machines_for_operation(op_idx)
+            usable_machines = machines[op_idx]
             
             for m_idx in usable_machines:
                 usable_workers = encoding.get_workers_for_operation_on_machine(op_idx, m_idx)
