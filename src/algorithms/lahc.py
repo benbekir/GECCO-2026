@@ -136,10 +136,9 @@ class LAHCSolver(FJSSPAlgorithm):
                 best = current
             
             history[v] = current.makespan
-            progression.append((i, best.makespan))
             
             if i % 1000 == 0:
-                print(f"LAHC Iter {i}: Best Makespan = {best.makespan}")
+                progression.append((i, float(best.makespan)))
 
         return best, progression
 

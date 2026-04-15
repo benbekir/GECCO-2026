@@ -99,7 +99,7 @@ class GreedyFJSSPWSolver(FJSSPAlgorithm):
 
         # History is empty for a constructive solver
         candidate = Candidate(None, ordered_ops, encoding)
-        return candidate, [(0, candidate.makespan)]
+        return candidate, [(0, float(candidate.makespan))]
     
 if __name__ == "__main__":
     solver = GreedyFJSSPWSolver()

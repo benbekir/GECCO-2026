@@ -147,17 +147,15 @@ class GASolver(FJSSPAlgorithm):
                 parents = []
                 for i in range(self.M):
                     parents.append(offsprings[i])
-                print(parents)
 
             elif self.strategy == Strategy.COMMA:
                 offsprings.sort(key=lambda x: x.makespan) 
                 parents = []
                 for i in range(self.M):
                     parents.append(offsprings[i])
-                print(parents)
 
             current_best = parents[0].makespan
-            history.append((gen, current_best))
+            history.append((gen, float(current_best)))
 
         parents.sort(key=lambda x: x.makespan) 
         return parents[0], history

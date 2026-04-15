@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import sys
 import pandas as pd
 import numpy as np
@@ -17,143 +18,140 @@ import matplotlib.pyplot as plt
 from src.util.benchmark_parser import WorkerBenchmarkParser
 from src.util.evaluation import workload_balance
 
-
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
         self.instances_dir = instances_dir
         self.files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
-        self.results = []
-        self.convergence_histories = {}
 
-    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int, filter_list: list[str] = []):
+    def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int, filter: list[str] = []) -> tuple[list[str], list[str]]:
+        """
+        Runs benchmarks and returns a list of paths to the generated CSV files.
+        """
         parser = WorkerBenchmarkParser()
-        total = len(filter_list) if filter_list else len(self.files)
+        created_result_files = []
+        created_history_files = []
 
         for name, algorithm in algorithms.items():
-            print(f"Running {name}...", end=" ", flush=True)
-            self.results = [] 
-            progress = 0
-
+            print(f"Running {name}...")
+            algo_results = []
+            algo_histories = {}
+            
             for filename in self.files:
-                if filter_list and filename not in filter_list:
+                if filter and filename not in filter:
                     continue
 
-                progress += 1
                 filepath = os.path.join(self.instances_dir, filename)
-                print(f"\nInstance {filename} ({progress}/{total})")
-                raw_makespan=[]
+                
                 for run_idx in range(k):
                     start_time = time.time()
-                    
                     encoding = parser.parse_benchmark(filepath)
                     best_candidate, history = algorithm.solve(encoding)
-                    raw_makespan.append(best_candidate.makespan)
-                    # Extract metrics
+                    
                     _, machines, workers = best_candidate.get_sequences()
                     c_workload_balance = workload_balance(machines, workers, encoding.durations())
-                    duration = time.time() - start_time
-                    avg_makespan = sum(raw_makespan) / k
-                    # Store each run as its own row
-                    self.results.append({
+                    runtime = time.time() - start_time
+
+                    if run_idx == 0:
+                        algo_histories[filename] = history
+                    algo_results.append({
                         "Algorithm": name,
                         "Instance": filename,
                         "Run_ID": run_idx + 1,
                         "Makespan": best_candidate.makespan,
-                        "Workload Balance": c_workload_balance,
-                        "Raw Makespans":raw_makespan,
-                        "Average Makespan": avg_makespan,
-                        "Runtime (s)": round(duration, 4)
+                        "Workload Balance": round(c_workload_balance, 2),
+                        "Runtime": round(runtime, 2)
                     })
-                    if run_idx == 0:
-                        self.convergence_histories[name] = history
-                print(f"Done {k} runs.")
 
-            self.save_results(output_file=f"results/{name}.csv")
-
-    def get_summary(self):
-        return pd.DataFrame(self.results)
-
-    def save_results(self, output_file="benchmark_results.csv"):
-        df = self.get_summary()
-        df.to_csv(output_file, index=False)
-        print(f"\nResults saved to {output_file}")
-
-def perform_weighted_ranking(summary_df):
-    instances = summary_df['Instance'].unique()
-    algorithms = summary_df['Algorithm'].unique()
-    
-    global_ps_scores = {algo: [] for algo in algorithms}
-    
-    print("\n--- Pairwise Probability of Superiority (PS) ---")
-    
-    for inst in instances:
-        print(f"\nInstance: {inst}")
-        
-        for algo_a in algorithms:
-            algo_a_scores = []
-            data_a = summary_df[(summary_df['Instance'] == inst) & 
-                               (summary_df['Algorithm'] == algo_a)]['Raw Makespans'].values[0]
-            n1 = len(data_a)
+            output_path = f"results/{name}.csv"
+            df = pd.DataFrame(algo_results)
+            df.to_csv(output_path, index=False)
+            created_result_files.append(output_path)
             
-            for algo_b in algorithms:
-                if algo_a == algo_b:
-                    continue
-                
-                data_b = summary_df[(summary_df['Instance'] == inst) & 
-                                   (summary_df['Algorithm'] == algo_b)]['Raw Makespans'].values[0]
-                n2 = len(data_b)
-                
-                stat, p_value = mannwhitneyu(data_a, data_b, alternative='two-sided')
-                
-                # Probability that a random run of A is better than a random run of B.
-                ps = ( (n1 * n2) - stat ) / (n1 * n2)
-                algo_a_scores.append(ps)
-                global_ps_scores[algo_a].append(ps)
+            hist_path = f"results/{name}_history.json"
+            with open(hist_path, 'w') as f:
+                json.dump(algo_histories, f)
+            created_history_files.append(hist_path)
+
+        return created_result_files, created_history_files
+
+    def perform_weighted_ranking(self, file_paths: list[str]):
+        """
+        Reads results from provided file paths and performs ranking.
+        """
+        # Load all results
+        dfs = [pd.read_csv(fp) for fp in file_paths]
+        df = pd.concat(dfs, ignore_index=True)
+
+        instances = df['Instance'].unique()
+        algorithms = df['Algorithm'].unique()
+        global_ps_scores = {algo: [] for algo in algorithms}
+
+        for inst in instances:
+            # Filter data for this specific instance
+            inst_df = df[df['Instance'] == inst]
             
-            avg_inst_ps = np.mean(algo_a_scores) if algo_a_scores else 0.5
-            print(f"  {algo_a:8} | Avg PS vs Others: {avg_inst_ps:.3f}")
+            for algo_a in algorithms:
+                # Extract all makespans for Algo A as a list/series
+                data_a = inst_df[inst_df['Algorithm'] == algo_a]['Makespan'].values
+                if len(data_a) == 0: continue
+                
+                for algo_b in algorithms:
+                    if algo_a == algo_b: continue
+                    
+                    data_b = inst_df[inst_df['Algorithm'] == algo_b]['Makespan'].values
+                    if len(data_b) == 0: continue
+                    
+                    # Statistical comparison
+                    stat, _ = mannwhitneyu(data_a, data_b, alternative='two-sided')
+                    
+                    # Probability of Superiority (PS)
+                    n1, n2 = len(data_a), len(data_b)
+                    ps = ((n1 * n2) - stat) / (n1 * n2)
+                    global_ps_scores[algo_a].append(ps)
 
-    leaderboard = []
-    for algo, scores in global_ps_scores.items():
-        leaderboard.append((algo, np.mean(scores)))
-    
-    leaderboard.sort(key=lambda x: x[1], reverse=True)
-    
-    print("\n" + "="*40)
-    print(f"{'FINAL ALGORITHM RANKING':^40}")
-    print("="*40)
-    for rank, (name, score) in enumerate(leaderboard, 1):
-        print(f"{rank}. {name:10} | Overall Superiority: {score:.4f}")
-    print("="*40)
+        # Final Leaderboard Logic
+        leaderboard = sorted([(algo, np.mean(scores)) for algo, scores in global_ps_scores.items() if scores], 
+                             key=lambda x: x[1], reverse=True)
 
-def plot_convergence(histories, instance_name):
-    plt.figure(figsize=(12, 6))
-    
-    for name, history in histories.items():
-        if not history:
-            continue
+        for rank, (name, score) in enumerate(leaderboard, 1):
+            print(f"{rank}. {name:15} | Global PS: {score:.4f}")
 
-        if isinstance(history[0], (list, tuple)):
-            iters = [h[0] for h in history]
-            values = [h[1] for h in history]
-        else:
-            values = history
-            iters = list(range(len(history)))
-
-        max_iter = max(iters) if max(iters) > 0 else 1
-        progress = [(i / max_iter) * 100 for i in iters]
+    def plot_convergence(self, history_files: list[str], instance_name: str):
+        plt.figure(figsize=(12, 6))
         
-        plt.plot(progress, values, label=name, linewidth=2)
+        for file_path in history_files:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            
+            algo_name = os.path.basename(file_path).replace("_history.json", "")
+            # we cant plot greedy algorithm converge
+            if algo_name == "GREEDY":
+                continue
+            
+            if instance_name in data:
+                history = data[instance_name]
+                
+                # Handle both list of values or list of [iter, value] pairs
+                if isinstance(history[0], list):
+                    iters = [h[0] for h in history]
+                    values = [h[1] for h in history]
+                else:
+                    values = history
+                    iters = list(range(len(history)))
 
-    plt.title(f"Normalized Convergence: {instance_name}", fontsize=14)
-    plt.xlabel("Search Progress (%)", fontsize=12)
-    plt.ylabel("Makespan", fontsize=12)
-    plt.legend()
-    plt.grid(True, linestyle='--', alpha=0.6)
-    
-    plt.tight_layout()
-    plt.savefig(f'convergence_{instance_name}.png', dpi=300)
-    plt.show()
+                # Normalize x-axis to 0-100% progress
+                max_i = max(iters) if iters else 1
+                progress = [(i / max_i) * 100 for i in iters]
+                
+                plt.plot(progress, values, label=algo_name, linewidth=2)
+
+        plt.title(f"Convergence Comparison: {instance_name}", fontsize=14)
+        plt.xlabel("Search Progress (%)", fontsize=12)
+        plt.ylabel("Makespan", fontsize=12)
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.3)
+        plt.savefig(f"results/plot_{instance_name}.png")
+        plt.show()
 
 def main() -> None:
     from src.algorithms.ga import GASolver, Strategy
@@ -161,24 +159,19 @@ def main() -> None:
     from src.algorithms.greedy import GreedyFJSSPWSolver
     from src.algorithms.spea import SPEA2Solver
 
-    K = 1
+    K = 10
     runner = BenchmarkRunner("instances/fjssp-w")
     algorithms: dict[str, FJSSPAlgorithm] = {
         "LAHC": LAHCSolver(L=50, max_iters=10_000),
         "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
-        #"GREEDY": GreedyFJSSPWSolver(),
+        "GREEDY": GreedyFJSSPWSolver(),
         "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
 
-    target = ["3_DPpaulli_15_workers.fjs"]
-    runner.run_benchmark(algorithms, k=K, filter_list=target)
-    
-    summary_df = runner.get_summary()
-    print("\nFinal Comparison:")
-    print(summary_df.pivot(index="Instance", columns="Algorithm", values="Average Makespan"))
-    perform_weighted_ranking(summary_df)
-    runner.save_results()
-    plot_convergence(runner.convergence_histories,target[0])
+    target = ["2b_Hurink_edata_1_workers.fjs"]
+    res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
+    runner.perform_weighted_ranking(res_files)
+    runner.plot_convergence(hist_files, "2b_Hurink_edata_1_workers.fjs")
     
 if __name__ == "__main__":
     main()
