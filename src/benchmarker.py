@@ -65,8 +65,11 @@ class BenchmarkRunner:
 
             self.save_results(output_file=f"results/{name}.csv")
 
+    def get_summary(self):
+        return pd.DataFrame(self.results)
+
     def save_results(self, output_file="benchmark_results.csv"):
-        df = pd.DataFrame(self.results)
+        df = self.get_summary()
         df.to_csv(output_file, index=False)
         print(f"\nResults saved to {output_file}")
 
