@@ -12,9 +12,10 @@ class Operation:
     offset: int
 
 class Candidate:
-    def __init__(self, schedule: list[list[Operation]] | None, ordered_ops: list[Operation], encoding: WorkerEncoding) -> None:
+    def __init__(self, schedule: list[list[Operation]], ordered_ops: list[Operation], encoding: WorkerEncoding) -> None:
         self.schedule = schedule
         self.ordered_ops = ordered_ops
+        self.balance = None
 
         seq, mach, work = self.get_sequences()
         start_times, m_fixed, w_fixed = evaluation.translate(seq, mach, work, encoding.durations())
@@ -22,6 +23,12 @@ class Candidate:
 
     def __repr__(self) -> str:
         return f"{self.makespan}"
+    
+    def get_balance(self, encoding: WorkerEncoding):
+        if not self.balance:
+            _, mach, work = self.get_sequences()
+            self.balance = evaluation.workload_balance(mach, work, encoding.durations())
+        return self.balance
 
     def get_sequences(self) -> tuple[list,list,list]:
         sequence = [op.job_index for op in self.ordered_ops]

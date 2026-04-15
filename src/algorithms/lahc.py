@@ -67,8 +67,10 @@ class LAHCSolver(FJSSPAlgorithm):
         
         mutation_type = random.random()
 
+        # change machine and worker assignment
         if mutation_type < 0.4:
-            # change machine and worker assignment
+            # we do not have to check if new machine and worker are free
+            # since in that case, the translate function will simply delay the start time
             op = new_ordered_ops[idx1]
             usable_machines = machines_for_ops[op.operation_index]
             new_m = random.choice(usable_machines)
@@ -79,31 +81,27 @@ class LAHCSolver(FJSSPAlgorithm):
             op.worker_index = new_w
             op.duration = encoding.durations()[op.operation_index][new_m][new_w]
 
+        # swap the job order of two operations
         elif mutation_type < 0.8:
-            # swap the job order of two operations
+            # making a change from job ids [0,2,*2*] to [*2*,2,0] wouldn't break anything 
+            # because machine and worker assignments are operation specific and operations are always executed in order.
+            # therefore, the resulting change would be [job 0 op 0, job 2 op 0, job 2 op 1] to [job 2 op 0, job 2 op 1, job 0 op 0].
             idx2 = random.randrange(len(new_ordered_ops))
-            # This effectively changes the order in which jobs are processed without 
-            # moving 'Op 2' machine data into an 'Op 1' slot.
             tmp_job = new_ordered_ops[idx1].job_index
             new_ordered_ops[idx1].job_index = new_ordered_ops[idx2].job_index
             new_ordered_ops[idx2].job_index = tmp_job
 
+        # shift operation to a new position
         else:
-            # move operation order
-            # we shift the job_index value through the list
-            # while keeping the machine/worker data fixed.
             target_idx = random.randint(0, len(new_ordered_ops) - 1)
-            # Extract all job IDs in their current priority order
             job_ids = [op.job_index for op in new_ordered_ops]
-            # Shift the job ID
             moving_job = job_ids.pop(idx1)
             job_ids.insert(target_idx, moving_job)
-            
-            # re-assign the shifted job IDs back to the fixed operation slots
+            # re-assign the shifted job ids back to the fixed operation slots
             for i in range(len(new_ordered_ops)):
                 new_ordered_ops[i].job_index = job_ids[i]
 
-        return Candidate(None, new_ordered_ops, encoding)
+        return Candidate([], new_ordered_ops, encoding)
 
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         num_jobs = encoding.n_jobs()
@@ -127,11 +125,15 @@ class LAHCSolver(FJSSPAlgorithm):
             candidate = self.__get_neighbor(encoding, machines_for_ops, current)
             v = i % self.L
 
-            # acceptance criteria
-            if candidate.makespan <= history[v] or candidate.makespan <= current.makespan:
+            if candidate.makespan < current.makespan or candidate.makespan < history[v]:
                 current = candidate
-                if current.makespan < best.makespan:
-                    best = current
+            elif candidate.makespan == current.makespan and candidate.get_balance(encoding) < current.get_balance(encoding):
+                current = candidate
+
+            if current.makespan < best.makespan:
+                best = current
+            elif current.makespan == best.makespan and current.get_balance(encoding) < best.get_balance(encoding):
+                best = current
             
             history[v] = current.makespan
             progression.append((i, best.makespan))
