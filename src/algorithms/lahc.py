@@ -143,6 +143,16 @@ class LAHCSolver(FJSSPAlgorithm):
 
 if __name__ == "__main__":
     from src.util.benchmark_parser import WorkerBenchmarkParser
-    encoding = WorkerBenchmarkParser().parse_benchmark("instances/fjssp-w/6_Fattahi_14_workers.fjs")
-    c, h = LAHCSolver(L=50, max_iters=5000).solve(encoding)
-    print(c.makespan)
+    import os
+    from src.util.evaluation import workload_balance
+    files = [f for f in os.listdir("instances/fjssp-w") if f.endswith('.fjs')]
+    scores = dict()
+    for file in files:
+        print(file)
+        encoding = WorkerBenchmarkParser().parse_benchmark(f"instances/fjssp-w/{file}")
+        c, h = LAHCSolver(L=50, max_iters=5000).solve(encoding)
+        _, machines, workers = c.get_sequences()
+        balance = workload_balance(machines, workers, encoding.durations())
+        print(c.makespan, balance)
+        scores[file] = c.makespan
+    print(scores)

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
 
 from src.util.benchmark_parser import WorkerBenchmarkParser
+from src.util.evaluation import workload_balance
 
 
 class BenchmarkRunner:
@@ -30,33 +31,37 @@ class BenchmarkRunner:
         parser = WorkerBenchmarkParser()
         progress = 0
         total = len(self.files)
-        for filename in self.files:
-            if filter_list and filename not in filter_list:
-                continue
-            progress += 1
-            print(f"Running instance {progress}/{total}...")
 
-            filepath = os.path.join(self.instances_dir, filename)
-            print(f"\n--- Benchmarking Instance: {filename} ---")
-            
-            for name, algorithm in algorithms.items():
-                print(f"Running {name}...", end=" ", flush=True)
-                
+        for name, algorithm in algorithms.items():
+            print(f"Running {name}...", end=" ", flush=True)
+
+            for filename in self.files:
+                progress += 1
+                filepath = os.path.join(self.instances_dir, filename)
+                print(f"\nInstance {filename} ({progress}/{total})")
+
                 start_time = time.time()
                 avg_candidate_makespan = 0
+                avg_workload_balance = 0
                 for _ in range(k):
                     encoding = parser.parse_benchmark(filepath)
                     best_candidate, _ = algorithm.solve(encoding)
+                    _, machines, workers = best_candidate.get_sequences()
+                    c_workload_balance = workload_balance(machines, workers, encoding.durations())
                     avg_candidate_makespan += best_candidate.makespan / k
+                    avg_workload_balance += c_workload_balance / k
                 avg_duration = (time.time() - start_time) / k
                 
                 self.results.append({
                     "Instance": filename,
-                    "Algorithm": name,
                     "Average Makespan": avg_candidate_makespan,
+                    "Average Workload Balance": avg_workload_balance,
                     "Average Runtime (s)": round(avg_duration, 2)
                 })
-                print(f"Done. Avg. Makespan: {avg_candidate_makespan}")
+                print("Done.")
+
+            self.save_results(output_file=f"results/{name}.csv")
+            pass
 
     def get_summary(self):
         return pd.DataFrame(self.results)
