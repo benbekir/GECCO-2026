@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 from math import sqrt as sqrt
-import matplotlib.pyplot as plt
 import random
 import numpy as np 
 import sys

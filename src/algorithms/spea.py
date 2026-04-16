@@ -2,10 +2,6 @@ from src.core.fjssp_algorithm import FJSSPAlgorithm
 from src.core.candidate import Candidate, Operation,WorkerEncoding
 from src.algorithms.aspea import Instance, density_function, environmental_selection,binary_tournament,calculate_fitness
 import src.util.evaluation as evaluation
-import random
-import numpy as np
-from math import sqrt
-import optuna
 
 class SPEA2Solver(FJSSPAlgorithm):
     def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1,mutation_limit=50,nuke_limit=150):
