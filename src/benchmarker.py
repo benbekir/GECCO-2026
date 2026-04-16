@@ -163,7 +163,7 @@ def main() -> None:
     runner = BenchmarkRunner("instances/fjssp-w")
     algorithms: dict[str, FJSSPAlgorithm] = {
         "LAHC": LAHCSolver(L=170, max_iters=54_755),
-        "GA_PLUS": GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=100),
+        "GA": GASolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         "GREEDY": GreedyFJSSPWSolver(),
         "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
