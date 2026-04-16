@@ -3,6 +3,7 @@
 # Next step (optional): refactor into modules & generate tests with RunCell
 # Quick start: pip install runcell
 
+from __future__ import annotations
 from math import sqrt as sqrt
 import matplotlib.pyplot as plt
 import random
@@ -64,7 +65,7 @@ class Instance:
             self.operation_sequence[idx1],self.operation_sequence[idx2]=self.operation_sequence[idx2],self.operation_sequence[idx1]
 
     @staticmethod
-    def uniform_crossover(parent_A:Instance,parent_B:Instance,mutation_rate:float):
+    def uniform_crossover(parent_A:'Instance',parent_B:'Instance',mutation_rate:float):
         child1=[]
         child2=[]
         for i in range(len(parent_A.worker_machine_sequence)):
@@ -78,7 +79,7 @@ class Instance:
         return child1,child2
     
     @staticmethod
-    def jox_crossover(parent_A:Instance,parent_B:Instance):
+    def jox_crossover(parent_A:'Instance',parent_B:'Instance'):
         unique_jobs_set=parent_A.operation_sequence+parent_B.operation_sequence
         unique_jobs_set=set(unique_jobs_set)
         unique_jobs=list(unique_jobs_set)
@@ -99,7 +100,7 @@ class Instance:
         return child
     
     @staticmethod
-    def breeding(parent_A:Instance,parent_B:Instance, mutation_rate:float):
+    def breeding(parent_A:'Instance',parent_B:'Instance', mutation_rate:float):
         child_operation_sequence=Instance.jox_crossover(parent_A,parent_B)
         child1,child2=Instance.uniform_crossover(parent_A,parent_B,mutation_rate)
 
