@@ -62,9 +62,9 @@ def create_objective(algorithm_choice:Algorithms):
             solver=LAHCSolver(L=L,max_iters=max_iters)
 
         elif algorithm_choice==Algorithms.GA:
-            strategy = trial.suggest_categorical("strategy", choices=[Strategy.PLUS, Strategy.COMMA])
-            M = trial.suggest_int("M",10,50)
-            L = trial.suggest_int("L",50,200)
+            strategy = trial.suggest_categorical("strategy", choices=(Strategy.PLUS, Strategy.COMMA))
+            M = trial.suggest_int("M",10,200)
+            L = trial.suggest_int("L",50,700)
             print(f"Chose Strategy={strategy}, M={M}, L={L}.")
             solver= GASolver(strategy=strategy,M=M,L=L,max_generations=500)
              
@@ -79,7 +79,7 @@ def create_objective(algorithm_choice:Algorithms):
     return objective
 
 if __name__ == "__main__":
-    MY_CHOICE = Algorithms.LAHC
+    MY_CHOICE = Algorithms.GA
     
     study = optuna.create_study(direction="minimize")
     func = create_objective(MY_CHOICE)

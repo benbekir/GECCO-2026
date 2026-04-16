@@ -26,8 +26,7 @@ The 30 competition instances can be found under *instances/fjssp-w*, each of whi
 
 
 ## TODOS
-- add wilcoxon ranking to measure algorithm performance
+- optimize parameters
 - add local search for last part of the algorithm (as soon as there are X generations without improvement)
     - apply local search for a few iterations and continue with the original algorithm
 - visualize solution with Gantt chart
-- visualize convergence, comparison of algorithms regarding makespan and worker balance
