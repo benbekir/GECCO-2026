@@ -41,6 +41,7 @@ class BenchmarkRunner:
                     continue
 
                 filepath = os.path.join(self.instances_dir, filename)
+                print(f"File: {filename}")
                 
                 for run_idx in range(k):
                     start_time = time.time()
@@ -71,6 +72,7 @@ class BenchmarkRunner:
             with open(hist_path, 'w') as f:
                 json.dump(algo_histories, f)
             created_history_files.append(hist_path)
+            print(f"Done with {name}. Saved files to {output_path} and {hist_path}.")
 
         return created_result_files, created_history_files
 
@@ -169,7 +171,7 @@ def main() -> None:
     }
 
     target = ["2b_Hurink_edata_1_workers.fjs"]
-    res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
+    res_files, hist_files = runner.run_benchmark(algorithms, k=K)
     runner.perform_weighted_ranking(res_files)
     runner.plot_convergence(hist_files, "2b_Hurink_edata_1_workers.fjs")
     
