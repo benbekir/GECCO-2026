@@ -1,0 +1,11 @@
+Algorithm,Instance,Run_ID,Makespan,Workload Balance,Runtime
+LAHC,1_Brandimarte_7_workers.fjs,1,193,891.43,22.47
+LAHC,1_Brandimarte_7_workers.fjs,2,190,1.43,22.42
+LAHC,1_Brandimarte_7_workers.fjs,3,162,22.86,22.64
+LAHC,1_Brandimarte_7_workers.fjs,4,168,0.86,22.56
+LAHC,1_Brandimarte_7_workers.fjs,5,181,49.43,21.77
+LAHC,1_Brandimarte_7_workers.fjs,6,182,1.71,21.52
+LAHC,1_Brandimarte_7_workers.fjs,7,202,1399.43,21.41
+LAHC,1_Brandimarte_7_workers.fjs,8,204,25.71,21.33
+LAHC,1_Brandimarte_7_workers.fjs,9,190,4.86,21.66
+LAHC,1_Brandimarte_7_workers.fjs,10,198,1.71,21.31
