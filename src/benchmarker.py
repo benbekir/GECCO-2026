@@ -24,24 +24,30 @@ class BenchmarkRunner:
         self.files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
 
     def run_benchmark(self, algorithms: dict[str, "FJSSPAlgorithm"], k: int, filter: list[str] = []) -> tuple[list[str], list[str]]:
-        """
-        Runs benchmarks and returns a list of paths to the generated CSV files.
-        """
         parser = WorkerBenchmarkParser()
-        created_result_files = []
-        created_history_files = []
+        created_result_files = list[str]()
+        created_history_files = list[str]()
+
+        # ensure results directory exists
+        os.makedirs("results", exist_ok=True)
 
         for name, algorithm in algorithms.items():
-            print(f"Running {name}...")
-            algo_results = []
-            algo_histories = {}
+            print(f"Starting Algorithm: {name}")
             
+            output_path = f"results/{name}.csv"
+            hist_path = f"results/{name}_history.json"
+            
+            created_result_files.append(output_path)
+            created_history_files.append(hist_path)
+
             for filename in self.files:
                 if filter and filename not in filter:
                     continue
 
                 filepath = os.path.join(self.instances_dir, filename)
-                print(f"File: {filename}")
+                print(f"  Running File: {filename}...", end=" ", flush=True)
+                
+                file_results = [] # Temporary list for the k runs of THIS file
                 
                 for run_idx in range(k):
                     start_time = time.time()
@@ -52,9 +58,11 @@ class BenchmarkRunner:
                     c_workload_balance = workload_balance(machines, workers, encoding.durations())
                     runtime = time.time() - start_time
 
+                    # Store history only for the first run of each file
                     if run_idx == 0:
-                        algo_histories[filename] = history
-                    algo_results.append({
+                        self._update_history_json(hist_path, filename, history)
+
+                    file_results.append({
                         "Algorithm": name,
                         "Instance": filename,
                         "Run_ID": run_idx + 1,
@@ -63,18 +71,28 @@ class BenchmarkRunner:
                         "Runtime": round(runtime, 2)
                     })
 
-            output_path = f"results/{name}.csv"
-            df = pd.DataFrame(algo_results)
-            df.to_csv(output_path, index=False)
-            created_result_files.append(output_path)
-            
-            hist_path = f"results/{name}_history.json"
-            with open(hist_path, 'w') as f:
-                json.dump(algo_histories, f)
-            created_history_files.append(hist_path)
-            print(f"Done with {name}. Saved files to {output_path} and {hist_path}.")
+                df = pd.DataFrame(file_results)
+                file_exists = os.path.isfile(output_path)
+                df.to_csv(output_path, mode='a', index=False, header=not file_exists)
+                
+                print(f"Done (k={k}). Results appended.")
 
         return created_result_files, created_history_files
+
+    def _update_history_json(self, path, instance_name, history_data):
+        """Helper to update the JSON history file incrementally."""
+        data = {}
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as f:
+                    data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
+                
+        data[instance_name] = history_data
+        
+        with open(path, 'w') as f:
+            json.dump(data, f)
 
     def perform_weighted_ranking(self, file_paths: list[str]):
         """
