@@ -229,12 +229,29 @@ def main() -> None:
         #"GREEDY": GreedyFJSSPWSolver(),
         "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
-
-    target = ["0_BehnkeGeiger_42_workers.fjs"]
-    #res_files, hist_files = 
-    runner.run_benchmark(algorithms, k=K,filter=target)
+    target = [
+        "2a_Hurink_sdata_1_workers.fjs",
+        "2a_Hurink_sdata_38_workers.fjs",
+        "2a_Hurink_sdata_54_workers.fjs",
+        "2a_Hurink_sdata_63_workers.fjs",
+        "2b_Hurink_edata_1_workers.fjs",
+        "2b_Hurink_edata_6_workers.fjs",
+        "2c_Hurink_rdata_28_workers.fjs",
+        "2c_Hurink_rdata_38_workers.fjs",
+        "2d_Hurink_vdata_5_workers.fjs",
+        "2d_Hurink_vdata_18_workers.fjs",
+        "3_DPpaulli_1_workers.fjs",
+        "3_DPpaulli_18_workers.fjs",
+        "4_ChambersBarnes_10_workers.fjs",
+        "5_Kacem_3_workers.fjs",
+        "6_Fattahi_14_workers.fjs",
+        "6_Fattahi_20_workers.fjs"]
+    res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
+    #res_files = ["results/GA.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv"]
     #runner.perform_weighted_ranking(res_files)
-    #runner.plot_convergence(hist_files, "2b_Hurink_edata_1_workers.fjs")
+    #hist_files = ["results/GA_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
+    #runner.plot_convergence(hist_files, "1_Brandimarte_7_workers.fjs")
+    #runner.plot_bars(res_files)
     
 if __name__ == "__main__":
     main()
