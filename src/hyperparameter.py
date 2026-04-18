@@ -17,11 +17,6 @@ from src.util.benchmark_parser import WorkerBenchmarkParser
 from enum import Enum
 import json
 
-instances_dir = "instances/fjssp-w"
-files = [f for f in os.listdir(instances_dir) if f.endswith('.fjs')]
-
-parser=WorkerBenchmarkParser()
-
 class Algorithms(Enum):
      SPEA2=1
      LAHC=2
@@ -43,77 +38,95 @@ TARGET_FILES = [
     # 6 6 9
     "2b_Hurink_edata_1_workers.fjs"
 ]
-def create_objective(algorithm_choice:Algorithms):
+
+def save_best_callback(study, trial):
+    """Callback to save results whenever a new best trial is found."""
+    if study.best_trial.number == trial.number:
+        filename = f"results/best_params_{study.user_attrs['algorithm_name'].lower()}.json"
+        
+        # Prepare data for JSON
+        best_params = study.best_params.copy()
+        if "strategy" in best_params:
+            best_params["strategy"] = str(best_params["strategy"])
+
+        output_data = {
+            "best_value": study.best_value,
+            "best_params": best_params
+        }
+
+        os.makedirs("results", exist_ok=True)
+        with open(filename, "w") as f:
+            json.dump(output_data, f, indent=4)
+        print(f"--> New best found! Trial {trial.number} saved to {filename}")
+
+def create_objective(algorithm_choice: Algorithms):
+    parser = WorkerBenchmarkParser()
+    instances_dir = "instances/fjssp-w"
 
     def objective(trial: optuna.trial.Trial):
         solver: FJSSPAlgorithm = None
-        if algorithm_choice==Algorithms.SPEA2:
-            population=trial.suggest_int("population_size",150,400)
-            archive=trial.suggest_int("archive_size",50,200)
-            mutation_rate=trial.suggest_float("mutation_rate",0.01,0.2)
-            mut_limit = trial.suggest_int("tracker_limit_mutation", 15, 60, step=5)
-            nuke_limit = trial.suggest_int("tracker_limit_nuke", 60, 150, step=10)
-            print(f"Chose population={population}, archive={archive}, mutation_rate={mutation_rate}, mut_limit={mut_limit}, nuke_limit={nuke_limit}.")
-            solver=SPEA2Solver(pop_size=population,archive_size=archive,max_generations=150,mutation_rate=mutation_rate,mutation_limit=mut_limit,nuke_limit=nuke_limit)
+        if algorithm_choice == Algorithms.SPEA2:
+            pop = trial.suggest_int("population_size", 150, 400)
+            arc = trial.suggest_int("archive_size", 50, 200)
+            mut = trial.suggest_float("mutation_rate", 0.01, 0.2)
+            mut_lim = trial.suggest_int("tracker_limit_mutation", 15, 60, step=5)
+            nuke_lim = trial.suggest_int("tracker_limit_nuke", 60, 150, step=10)
+            solver = SPEA2Solver(pop, arc, 150, mut, mut_lim, nuke_lim)
 
-        elif algorithm_choice==Algorithms.LAHC:
-            L=trial.suggest_int("L",10,500)
-            max_iters=trial.suggest_int("Max_iterations",5000,75000,log=True)
-            print(f"Chose L={L}, max_iters={max_iters}.")
-            solver=LAHCSolver(L=L,max_iters=max_iters)
+        elif algorithm_choice == Algorithms.LAHC:
+            L = trial.suggest_int("L", 10, 500)
+            max_iters = trial.suggest_int("Max_iterations", 5000, 75000, log=True)
+            solver = LAHCSolver(L=L, max_iters=max_iters)
 
-        elif algorithm_choice==Algorithms.ML:
-            strategy = trial.suggest_categorical("strategy", choices=(Strategy.PLUS, Strategy.COMMA))
-            M = trial.suggest_int("M",10,200)
-            L = trial.suggest_int("L",50,700)
-            print(f"Chose Strategy={strategy}, M={M}, L={L}.")
-            solver=MLSolver(strategy=strategy,M=M,L=L,max_generations=500)
-        
-        elif algorithm_choice==Algorithms.HYBRID:
+        elif algorithm_choice == Algorithms.ML:
+            strat = trial.suggest_categorical("strategy", [Strategy.PLUS, Strategy.COMMA])
+            M = trial.suggest_int("M", 10, 200)
+            L = trial.suggest_int("L", 50, 700)
+            solver = MLSolver(strategy=strat, M=M, L=L, max_generations=500)
+
+        elif algorithm_choice == Algorithms.HYBRID:
             TOTAL_BUDGET = 100_000
-    
             pop_size = trial.suggest_int("pop_size", 20, 100)
-            max_generations = trial.suggest_int("max_generations", 20, 100)
+            max_gens = trial.suggest_int("max_generations", 2, 100)
             
-            remaining_budget = TOTAL_BUDGET - pop_size
-            possible_iters = remaining_budget // (max_generations * pop_size)
+            # Budget calculation
+            remaining = TOTAL_BUDGET - pop_size
+            possible_iters = remaining // (max_gens * pop_size)
             lahc_iters = max(1, possible_iters - 1)
             
-            archive_size = trial.suggest_int("archive_size", 10, 50)
+            arc_size = trial.suggest_int("archive_size", 10, 50)
             lahc_l = trial.suggest_int("lahc_l", 10, 100)
-            solver = HybridSPEALAHC(pop_size, archive_size, max_generations, lahc_iters, lahc_l)
-             
-        results=[]
+            solver = HybridSPEALAHC(pop_size, arc_size, max_gens, lahc_iters, lahc_l)
+
+        results = []
         for file in TARGET_FILES:
-            print(f"Running {file}...")
             filepath = os.path.join(instances_dir, file)
             encoding = parser.parse_benchmark(filepath)
-            best_candidate,_=solver.solve(encoding)
+            best_candidate, _ = solver.solve(encoding)
+            # Normalized makespan (relative to number of operations)
             results.append(best_candidate.makespan / encoding.n_operations())
+        
         return sum(results) / len(results)
+
     return objective
 
 if __name__ == "__main__":
     MY_CHOICE = Algorithms.HYBRID
     
     study = optuna.create_study(direction="minimize")
-    func = create_objective(MY_CHOICE)
-    study.optimize(func, n_trials=1)
+    study.set_user_attr("algorithm_name", MY_CHOICE.name)
     
-    print(f"Best params for {MY_CHOICE.name}: {study.best_params}")
+    func = create_objective(MY_CHOICE)
+    
+    print(f"Starting Optuna for {MY_CHOICE.name}...")
+    print("Limits: 50 trials OR 10 hours.")
 
-    output_data = {
-        "algorithm": MY_CHOICE.name,
-        "best_value": study.best_value,
-        "best_params": study.best_params
-    }
-    if "strategy" in output_data["best_params"]:
-        output_data["best_params"]["strategy"] = str(output_data["best_params"]["strategy"])
-
-    filename = f"results/best_params_{MY_CHOICE.name.lower()}.json"
-
-    with open(filename, "w") as f:
-        json.dump(output_data, f, indent=4)
-
-    print(f"Parameters successfully saved to {filename}")
-                
+    study.optimize(
+        func, 
+        n_trials=50, 
+        timeout=36000, 
+        callbacks=[save_best_callback]
+    )
+    
+    print("\nOptimization Complete.")
+    print(f"Best params: {study.best_params}")

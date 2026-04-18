@@ -48,7 +48,6 @@ class HybridSPEALAHC(FJSSPAlgorithm):
             ind.update_fitness()
 
         for gen in range(1, self.max_generations + 1):
-            print(f"Gen {gen}/{self.max_generations}")
             combined = density_function(population, archive)
             archive = environmental_selection(combined, self.archive_size)
             
