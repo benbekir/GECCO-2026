@@ -1,5 +1,0 @@
-Instance,Algorithm,Average Makespan,Raw Makespans,Average Runtime (s)
-3_DPpaulli_15_workers.fjs,LAHC,3347.0,[np.int64(3347)],21.51
-3_DPpaulli_15_workers.fjs,GA_PLUS,4781.0,[np.int64(4781)],7.63
-3_DPpaulli_15_workers.fjs,GREEDY,13463.0,[np.int64(13463)],0.29
-3_DPpaulli_15_workers.fjs,SPEA-II,3514.0,[np.int64(3514)],225.23

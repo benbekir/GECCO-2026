@@ -216,7 +216,7 @@ class BenchmarkRunner:
         plt.show()
 
 def main() -> None:
-    from src.algorithms.ga import GASolver, Strategy
+    from src.algorithms.ml import MLSolver, Strategy
     from src.algorithms.lahc import LAHCSolver
     from src.algorithms.greedy import GreedyFJSSPWSolver
     from src.algorithms.spea import SPEA2Solver
@@ -225,7 +225,7 @@ def main() -> None:
     runner = BenchmarkRunner("instances/fjssp-w")
     algorithms: dict[str, FJSSPAlgorithm] = {
         #"LAHC": LAHCSolver(L=170, max_iters=54_755),
-        #"GA": GASolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
+        #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         #"GREEDY": GreedyFJSSPWSolver(),
         "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
@@ -246,12 +246,12 @@ def main() -> None:
         "5_Kacem_3_workers.fjs",
         "6_Fattahi_14_workers.fjs",
         "6_Fattahi_20_workers.fjs"]
-    res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
-    #res_files = ["results/GA.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv"]
-    #runner.perform_weighted_ranking(res_files)
-    #hist_files = ["results/GA_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
+    #res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
+    res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv"]
+    runner.perform_weighted_ranking(res_files)
+    hist_files = ["results/ML_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
     #runner.plot_convergence(hist_files, "1_Brandimarte_7_workers.fjs")
-    #runner.plot_bars(res_files)
+    runner.plot_bars(res_files)
     
 if __name__ == "__main__":
     main()

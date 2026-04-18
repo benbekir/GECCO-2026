@@ -4,6 +4,7 @@ from src.core.candidate import Candidate, Operation, WorkerEncoding
 from src.core.fjssp_algorithm import FJSSPAlgorithm
 
 class LAHCSolver(FJSSPAlgorithm):
+    """Late-acceptance Hill Climber"""
     def __init__(self, **kwargs):
         self.L = kwargs.get('L', 50)
         self.max_iters = kwargs.get('max_iters', 10000)

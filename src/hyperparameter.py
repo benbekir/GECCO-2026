@@ -14,8 +14,8 @@ from src.util.benchmark_parser import WorkerBenchmarkParser
 from src.algorithms.spea import SPEA2Solver
 from enum import Enum
 from src.algorithms.lahc import LAHCSolver
-from src.algorithms.ga import GASolver
-from src.algorithms.ga import Strategy
+from src.algorithms.ml import MLSolver
+from src.algorithms.ml import Strategy
 import json
 
 instances_dir = "instances/fjssp-w"
@@ -27,7 +27,7 @@ class Algorithms(Enum):
      SPEA2=1
      LAHC=2
      GOGETA=3
-     GA=4
+     ML=4
      
 TARGET_FILES = [
     # 100 60 90
@@ -61,12 +61,12 @@ def create_objective(algorithm_choice:Algorithms):
             print(f"Chose L={L}, max_iters={max_iters}.")
             solver=LAHCSolver(L=L,max_iters=max_iters)
 
-        elif algorithm_choice==Algorithms.GA:
+        elif algorithm_choice==Algorithms.ML:
             strategy = trial.suggest_categorical("strategy", choices=(Strategy.PLUS, Strategy.COMMA))
             M = trial.suggest_int("M",10,200)
             L = trial.suggest_int("L",50,700)
             print(f"Chose Strategy={strategy}, M={M}, L={L}.")
-            solver= GASolver(strategy=strategy,M=M,L=L,max_generations=500)
+            solver= MLSolver(strategy=strategy,M=M,L=L,max_generations=500)
              
         results=[]
         for file in TARGET_FILES:
@@ -79,7 +79,7 @@ def create_objective(algorithm_choice:Algorithms):
     return objective
 
 if __name__ == "__main__":
-    MY_CHOICE = Algorithms.GA
+    MY_CHOICE = Algorithms.LAHC
     
     study = optuna.create_study(direction="minimize")
     func = create_objective(MY_CHOICE)

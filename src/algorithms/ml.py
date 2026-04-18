@@ -7,7 +7,8 @@ class Strategy(Enum):
     PLUS = 1
     COMMA = 2
 
-class GASolver(FJSSPAlgorithm):
+class MLSolver(FJSSPAlgorithm):
+    """Mu Lamda Evolutional Strategy"""
     def __init__(self, **kwargs) -> None:
         self.strategy = kwargs.get('strategy', Strategy.PLUS)
         self.M = kwargs.get('M', 10)
@@ -163,5 +164,5 @@ class GASolver(FJSSPAlgorithm):
 if __name__ == "__main__":
     from src.util.benchmark_parser import WorkerBenchmarkParser
     encoding = WorkerBenchmarkParser().parse_benchmark("instances/fjssp-w/5_Kacem_3_workers.fjs")
-    c, h = GASolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=500).solve(encoding)
+    c, h = MLSolver(Strategy=Strategy.PLUS, M=10, L=50, max_generations=500).solve(encoding)
     print(c.makespan)
