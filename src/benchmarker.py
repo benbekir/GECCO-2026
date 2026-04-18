@@ -228,8 +228,8 @@ def main() -> None:
         #"LAHC": LAHCSolver(L=170, max_iters=54_755),
         #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         #"GREEDY": GreedyFJSSPWSolver(),
-        #"SPEA-II": SPEA2Solver(pop_size=31,archive_size=128,max_generations=50,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
-        "HYBRID": HybridSPEALAHC(pop_size=40, max_generations=50, lahc_iters=24, archive_size=20, lahc_l=10)
+        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
+        #"HYBRID": HybridSPEALAHC(pop_size=40, max_generations=50, lahc_iters=24, archive_size=20, lahc_l=10)
     }
     target = [
         "2a_Hurink_sdata_1_workers.fjs",
@@ -245,7 +245,9 @@ def main() -> None:
         "4_ChambersBarnes_10_workers.fjs",
         "5_Kacem_3_workers.fjs",
         "6_Fattahi_14_workers.fjs",
-        "6_Fattahi_20_workers.fjs"]
+        "6_Fattahi_20_workers.fjs",
+        "2c_Hurink_rdata_38_workers.fjs",
+        "3_DPpaulli_18_workers.fjs"]
     #res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
     res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv", "results/HYBRID.csv"]
     runner.perform_weighted_ranking(res_files)
