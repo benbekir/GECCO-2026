@@ -239,17 +239,15 @@ def main() -> None:
         "2b_Hurink_edata_1_workers.fjs",
         "2b_Hurink_edata_6_workers.fjs",
         "2c_Hurink_rdata_28_workers.fjs",
-        "2c_Hurink_rdata_38_workers.fjs",
         "2d_Hurink_vdata_5_workers.fjs",
         "2d_Hurink_vdata_18_workers.fjs",
         "3_DPpaulli_1_workers.fjs",
-        "3_DPpaulli_18_workers.fjs",
         "4_ChambersBarnes_10_workers.fjs",
         "5_Kacem_3_workers.fjs",
         "6_Fattahi_14_workers.fjs",
         "6_Fattahi_20_workers.fjs"]
     #res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
-    res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv"]
+    res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv", "results/HYBRID.csv"]
     runner.perform_weighted_ranking(res_files)
     hist_files = ["results/ML_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
     #runner.plot_convergence(hist_files, "1_Brandimarte_7_workers.fjs")

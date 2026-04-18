@@ -1,0 +1,21 @@
+Algorithm,Instance,Run_ID,Makespan,Workload Balance,Runtime
+HYBRID,5_Kacem_4_workers.fjs,1,31.0,193.6,103.23
+HYBRID,5_Kacem_4_workers.fjs,2,33.0,109.73,102.91
+HYBRID,5_Kacem_4_workers.fjs,3,33.0,395.33,103.72
+HYBRID,5_Kacem_4_workers.fjs,4,30.0,190.4,101.81
+HYBRID,5_Kacem_4_workers.fjs,5,30.0,135.6,102.26
+HYBRID,5_Kacem_4_workers.fjs,6,31.0,156.93,102.23
+HYBRID,5_Kacem_4_workers.fjs,7,29.0,73.33,101.5
+HYBRID,5_Kacem_4_workers.fjs,8,31.0,406.93,101.58
+HYBRID,5_Kacem_4_workers.fjs,9,33.0,151.73,101.6
+HYBRID,5_Kacem_4_workers.fjs,10,37.0,385.6,102.73
+HYBRID,2c_Hurink_rdata_50_workers.fjs,1,6766.0,3768435.33,16.16
+HYBRID,2c_Hurink_rdata_50_workers.fjs,2,7096.0,686202.83,16.05
+HYBRID,2c_Hurink_rdata_50_workers.fjs,3,7282.0,983386.0,15.99
+HYBRID,2c_Hurink_rdata_50_workers.fjs,4,6879.0,1954118.83,16.05
+HYBRID,2c_Hurink_rdata_50_workers.fjs,5,6604.0,3559837.33,16.01
+HYBRID,2c_Hurink_rdata_50_workers.fjs,6,6929.0,1187416.83,16.02
+HYBRID,2c_Hurink_rdata_50_workers.fjs,7,6663.0,1031916.83,15.94
+HYBRID,2c_Hurink_rdata_50_workers.fjs,8,6864.0,2346622.83,16.0
+HYBRID,2c_Hurink_rdata_50_workers.fjs,9,7034.0,1874382.0,15.95
+HYBRID,2c_Hurink_rdata_50_workers.fjs,10,6863.0,777936.83,15.96
