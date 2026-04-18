@@ -12,6 +12,8 @@ class SPEA2Solver(FJSSPAlgorithm):
         self.base_mutation = mutation_rate
         self.nuke_limit=nuke_limit
         self.mutation_limit=mutation_limit
+        self.TABU_THRESHOLD = TABU_THRESHOLD
+        self.TABU_DURATION=TABU_DURATION
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
         population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
@@ -26,6 +28,7 @@ class SPEA2Solver(FJSSPAlgorithm):
         for gen in range(1, self.max_generations + 1):
             combined = density_function(population, archive)
             archive = environmental_selection(combined, self.archive_size)
+            current_best_instance = min(archive, key=lambda x: x.makespan)
             current_best = min(ind.makespan for ind in archive)
          
             history_best_makespan.append((gen, current_best))
@@ -36,7 +39,20 @@ class SPEA2Solver(FJSSPAlgorithm):
                 current_mutation = self.base_mutation
             else:
                 tracker += 1
-            
+            if tracker == self.nuke_limit:
+                print(f"Gen {gen}: Stagnation detected. Refining Archive via Tabu Search...")
+                refined_best = TabuLocalSearch.tabu_search(
+                    current_best_instance, 
+                    iterations=50, 
+                    tabu_size=20
+                )
+                archive[0] = refined_best
+                global_best_makespan = refined_best.makespan
+                if refined_best.makespan < archive[0].makespan:
+                    print(f" Tabu success! {archive[0].makespan} -> {refined_best.makespan}")
+                    archive[0] = refined_best
+                else:
+                    print("Tabu didn't find an improvement")
             if tracker > self.nuke_limit:
                 archive = [min(archive, key=lambda x: x.makespan)]
                 population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
