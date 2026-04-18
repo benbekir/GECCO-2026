@@ -9,7 +9,7 @@ import random
 import numpy as np 
 import sys
 import os
-
+import copy
 sys.path.append(os.path.abspath(os.path.join('..')))
 
 # # Helper Functions
@@ -76,6 +76,9 @@ class Instance:
                 child2.append(parent_A.worker_machine_sequence[i])
 
         return child1,child2
+    def copy(self):
+       
+        return copy.deepcopy(self)
     
     @staticmethod
     def jox_crossover(parent_A:'Instance',parent_B:'Instance'):

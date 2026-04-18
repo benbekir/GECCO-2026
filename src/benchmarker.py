@@ -224,16 +224,17 @@ def main() -> None:
     K = 10
     runner = BenchmarkRunner("instances/fjssp-w")
     algorithms: dict[str, FJSSPAlgorithm] = {
-        "LAHC": LAHCSolver(L=170, max_iters=54_755),
-        "GA": GASolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
-        "GREEDY": GreedyFJSSPWSolver(),
+        #"LAHC": LAHCSolver(L=170, max_iters=54_755),
+        #"GA": GASolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
+        #"GREEDY": GreedyFJSSPWSolver(),
         "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
     }
 
-    target = ["2b_Hurink_edata_1_workers.fjs"]
-    res_files, hist_files = runner.run_benchmark(algorithms, k=K)
-    runner.perform_weighted_ranking(res_files)
-    runner.plot_convergence(hist_files, "2b_Hurink_edata_1_workers.fjs")
+    target = ["0_BehnkeGeiger_42_workers.fjs"]
+    #res_files, hist_files = 
+    runner.run_benchmark(algorithms, k=K,filter=target)
+    #runner.perform_weighted_ranking(res_files)
+    #runner.plot_convergence(hist_files, "2b_Hurink_edata_1_workers.fjs")
     
 if __name__ == "__main__":
     main()
