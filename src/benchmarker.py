@@ -220,6 +220,7 @@ def main() -> None:
     from src.algorithms.lahc import LAHCSolver
     from src.algorithms.greedy import GreedyFJSSPWSolver
     from src.algorithms.spea import SPEA2Solver
+    from src.algorithms.spea_lahc import HybridSPEALAHC
 
     K = 10
     runner = BenchmarkRunner("instances/fjssp-w")
@@ -227,7 +228,8 @@ def main() -> None:
         #"LAHC": LAHCSolver(L=170, max_iters=54_755),
         #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         #"GREEDY": GreedyFJSSPWSolver(),
-        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80)
+        #"SPEA-II": SPEA2Solver(pop_size=31,archive_size=128,max_generations=50,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
+        "HYBRID": HybridSPEALAHC(pop_size=40, max_generations=50, lahc_iters=24, archive_size=20, lahc_l=10)
     }
     target = [
         "2a_Hurink_sdata_1_workers.fjs",

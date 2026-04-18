@@ -1,6 +1,6 @@
 from src.core.fjssp_algorithm import FJSSPAlgorithm
 from src.core.candidate import Candidate, Operation,WorkerEncoding
-from src.algorithms.aspea import Instance, density_function, environmental_selection,binary_tournament,calculate_fitness
+from src.algorithms.aspea import Instance, density_function, environmental_selection,binary_tournament
 import src.util.evaluation as evaluation
 
 class SPEA2Solver(FJSSPAlgorithm):
@@ -20,7 +20,7 @@ class SPEA2Solver(FJSSPAlgorithm):
         global_best_makespan = float('inf')
 
         for ind in population:
-            ind.makespan, ind.worker_balance_fitness = calculate_fitness(ind)
+            ind.update_fitness()
 
         for gen in range(1, self.max_generations + 1):
             combined = density_function(population, archive)
@@ -39,7 +39,7 @@ class SPEA2Solver(FJSSPAlgorithm):
                 archive = [min(archive, key=lambda x: x.makespan)]
                 population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
                 for ind in population:
-                    ind.makespan, ind.worker_balance_fitness = calculate_fitness(ind)
+                    ind.update_fitness()
                 tracker = 0
                 current_mutation = self.base_mutation
             elif tracker > self.mutation_limit:
@@ -69,7 +69,7 @@ class SPEA2Solver(FJSSPAlgorithm):
         ordered_ops = []
         for i in range(len(instance.operation_sequence)):
             m, w = m_fixed[i], w_fixed[i]
-            d = durations_3d[i][m][w] 
+            d = durations_3d[i][m][w]
             
             op_info = Operation(
                 machine_index=m,
@@ -81,4 +81,4 @@ class SPEA2Solver(FJSSPAlgorithm):
             )
             ordered_ops.append(op_info)
             
-        return Candidate(None, ordered_ops, encoding)
+        return Candidate([], ordered_ops, encoding)

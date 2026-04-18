@@ -128,18 +128,18 @@ class LAHCSolver(FJSSPAlgorithm):
 
             if candidate.makespan < current.makespan or candidate.makespan < history[v]:
                 current = candidate
-            elif candidate.makespan == current.makespan and candidate.get_balance(encoding) < current.get_balance(encoding):
+            elif candidate.makespan == current.makespan and candidate.get_balance() < current.get_balance():
                 current = candidate
 
             if current.makespan < best.makespan:
                 best = current
-            elif current.makespan == best.makespan and current.get_balance(encoding) < best.get_balance(encoding):
+            elif current.makespan == best.makespan and current.get_balance() < best.get_balance():
                 best = current
             
             history[v] = current.makespan
             
             if i % 1000 == 0:
-                progression.append((i, float(best.makespan)))
+                progression.append((i, best.makespan))
 
         return best, progression
 
