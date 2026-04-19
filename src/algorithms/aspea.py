@@ -2,6 +2,7 @@ from __future__ import annotations
 from math import sqrt as sqrt
 import random
 from src.core.instance import Instance
+import src.util.evaluation as evaluation
 
 def dominance_function_raw_fitness_combined(population,archive):
    combined=population+archive
@@ -117,6 +118,14 @@ def binary_tournament(archive, population_size,mutation_rate,daredevil_mode):
          parent_b=individual_d
       #Breeding where we have uniform crossover,jux crossover and swapping
       child_genes=Instance.breeding(parent_a,parent_b,mutation_rate)
-      child_genes.update_fitness()
+      child_genes.makespan, child_genes.worker_balance_fitness = calculate_fitness(child_genes)
       population.append(child_genes)
    return population
+
+def calculate_fitness(instance:Instance):
+    m_assignments = [item[0] for item in instance.worker_machine_sequence]
+    w_assignments = [item[1] for item in instance.worker_machine_sequence]
+    start_times, m_fixed, w_fixed = evaluation.translate(instance.operation_sequence,m_assignments,w_assignments, instance.encoding.durations())
+    val_makespan = evaluation.makespan(start_times, m_fixed, w_fixed, instance.encoding.durations())
+    val_balance = evaluation.workload_balance(m_fixed, w_fixed, instance.encoding.durations())
+    return float(val_makespan), val_balance

@@ -15,22 +15,13 @@ class Candidate:
     def __init__(self, schedule: list[list[Operation]], ordered_ops: list[Operation], encoding: WorkerEncoding) -> None:
         self.schedule = schedule
         self.ordered_ops = ordered_ops
-        self.encoding = encoding
         self._balance = None
-        
+        self._encoding = encoding
+
         seq, mach, work = self.get_sequences()
-        durations = encoding.durations()
-        start_times, m_fixed, w_fixed = evaluation.translate(seq, mach, work, durations)
-        
-        for i, op in enumerate(self.ordered_ops):
-            m, w = m_fixed[i], w_fixed[i]
-            op.machine_index = m
-            op.worker_index = w
-            op.offset = start_times[i]
-            op.duration = durations[i][m][w]
-
-        self.makespan = float(evaluation.makespan(start_times, m_fixed, w_fixed, durations))
-
+        start_times, m_fixed, w_fixed = evaluation.translate(seq, mach, work, encoding.durations())
+        self.makespan = evaluation.makespan(start_times, m_fixed, w_fixed, encoding.durations())
+    
     @classmethod
     def from_sequences(cls, job_seq: list[int], machine_worker_pairs: list[tuple], encoding: WorkerEncoding):
         """Creates a Candidate directly from SPEA2-style sequences."""
@@ -43,7 +34,7 @@ class Candidate:
     def get_balance(self):
         if self._balance is None:
             _, mach, work = self.get_sequences()
-            self._balance = evaluation.workload_balance(mach, work, self.encoding.durations())
+            self._balance = evaluation.workload_balance(mach, work, self._encoding.durations())
         return self._balance
 
     def get_sequences(self) -> tuple[list, list, list]:

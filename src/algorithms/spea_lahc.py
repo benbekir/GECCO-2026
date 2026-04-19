@@ -1,7 +1,7 @@
 from src.core.fjssp_algorithm import FJSSPAlgorithm
 from src.core.candidate import Candidate, WorkerEncoding
 from src.core.instance import Instance
-from src.algorithms.aspea import density_function, environmental_selection, binary_tournament
+from src.algorithms.aspea import density_function, environmental_selection, binary_tournament, calculate_fitness
 from multiprocessing import Pool
 from functools import partial
 import random
@@ -156,7 +156,7 @@ class HybridSPEALAHC(FJSSPAlgorithm):
         )
 
         for ind in population:
-            ind.update_fitness()
+            ind.makespan, ind.worker_balance_fitness = calculate_fitness(ind)
 
         for gen in range(1, self.max_generations + 1):
             print(f"\t\tGeneration: {gen}/{self.max_generations}")
