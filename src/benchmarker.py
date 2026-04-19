@@ -231,21 +231,15 @@ def main() -> None:
         #"LAHC": LAHCSolver(L=170, max_iters=54_755),
         #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         #"GREEDY": GreedyFJSSPWSolver(),
-        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
-        #"HYBRID": HybridSPEALAHC(pop_size=30, max_generations=100, lahc_iters=500, archive_size=20, lahc_l=50)
+        #"SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
+        "HYBRID": HybridSPEALAHC(pop_size=30, max_generations=100, lahc_iters=500, archive_size=20, lahc_l=50)
     }
-    target = [
-        "2a_Hurink_sdata_1_workers.fjs",
-        "2b_Hurink_edata_1_workers.fjs",
-        "3_DPpaulli_1_workers.fjs",
-        "4_ChambersBarnes_10_workers.fjs",
-        "5_Kacem_3_workers.fjs",
-        "6_Fattahi_14_workers.fjs"]
-    res_files, hist_files = runner.run_benchmark(algorithms, k=K, filter=target)
+    
+    res_files, hist_files = runner.run_benchmark(algorithms, k=K)
     #res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv", "results/HYBRID.csv"]
     #runner.perform_weighted_ranking(res_files)
-    #hist_files = ["results/ML_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
-    #runner.plot_convergence(hist_files, "1_Brandimarte_7_workers.fjs")
+    #hist_files = ["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
+    #runner.plot_convergence(hist_files, "5_Kacem_4_workers.fjs")
     #runner.plot_bars(res_files)
     
 if __name__ == "__main__":
