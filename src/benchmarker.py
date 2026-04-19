@@ -28,7 +28,6 @@ class BenchmarkRunner:
         created_result_files = list[str]()
         created_history_files = list[str]()
 
-        # ensure results directory exists
         os.makedirs("results", exist_ok=True)
 
         for name, algorithm in algorithms.items():
@@ -45,37 +44,41 @@ class BenchmarkRunner:
                     continue
 
                 filepath = os.path.join(self.instances_dir, filename)
-                print(f"  Running File: {filename}...", end=" ", flush=True)
-                
-                file_results = [] # Temporary list for the k runs of THIS file
+                print(f"Running File: {filename}...", flush=True)
                 
                 for run_idx in range(k):
+                    print(f"\tRun: {run_idx + 1}/{k}")
                     start_time = time.time()
                     encoding = parser.parse_benchmark(filepath)
+                    
+                    # Computationally expensive part
                     best_candidate, history = algorithm.solve(encoding)
                     
                     _, machines, workers = best_candidate.get_sequences()
                     c_workload_balance = workload_balance(machines, workers, encoding.durations())
                     runtime = time.time() - start_time
 
-                    # Store history only for the first run of each file
+                    # 1. Update history JSON immediately
                     if run_idx == 0:
                         self._update_history_json(hist_path, filename, history)
 
-                    file_results.append({
+                    # 2. Create a single-row result dictionary
+                    run_data = {
                         "Algorithm": name,
                         "Instance": filename,
                         "Run_ID": run_idx + 1,
                         "Makespan": best_candidate.makespan,
                         "Workload Balance": round(c_workload_balance, 2),
                         "Runtime": round(runtime, 2)
-                    })
+                    }
 
-                df = pd.DataFrame(file_results)
-                file_exists = os.path.isfile(output_path)
-                df.to_csv(output_path, mode='a', index=False, header=not file_exists)
-                
-                print(f"Done (k={k}). Results appended.")
+                    df = pd.DataFrame([run_data]) # Note: list wrapping the dict
+                    file_exists = os.path.isfile(output_path)
+                    df.to_csv(output_path, mode='a', index=False, header=not file_exists)
+                    
+                    print(f"\tRun {run_idx + 1} saved (Makespan: {best_candidate.makespan})")
+
+                print(f"  Completed all runs for {filename}.")
 
         return created_result_files, created_history_files
 
@@ -228,8 +231,8 @@ def main() -> None:
         #"LAHC": LAHCSolver(L=170, max_iters=54_755),
         #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
         #"GREEDY": GreedyFJSSPWSolver(),
-        "SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
-        #"HYBRID": HybridSPEALAHC(pop_size=40, max_generations=50, lahc_iters=24, archive_size=20, lahc_l=10)
+        #"SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
+        "HYBRID": HybridSPEALAHC(pop_size=30, max_generations=100, lahc_iters=500, archive_size=20, lahc_l=50)
     }
     target = [
         "2a_Hurink_sdata_1_workers.fjs",

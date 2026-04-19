@@ -1,9 +1,10 @@
 {
-    "best_value": 6.18011015160238,
+    "best_value": 5.889967568604874,
     "best_params": {
-        "pop_size": 58,
-        "max_generations": 99,
-        "archive_size": 22,
-        "lahc_l": 25
+        "pop_size": 64,
+        "max_generations": 156,
+        "archive_size": 21,
+        "lahc_l": 66,
+        "lahc_iters": 14
     }
 }

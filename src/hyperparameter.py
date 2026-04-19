@@ -85,18 +85,11 @@ def create_objective(algorithm_choice: Algorithms):
             solver = MLSolver(strategy=strat, M=M, L=L, max_generations=500)
 
         elif algorithm_choice == Algorithms.HYBRID:
-            TOTAL_BUDGET = 100_000
-            pop_size = trial.suggest_int("pop_size", 20, 100)
-            max_gens = trial.suggest_int("max_generations", 2, 100)
-            
-            # Budget calculation
-            remaining = TOTAL_BUDGET - pop_size
-            possible_iters = remaining // (max_gens * pop_size)
-            lahc_iters = max(1, possible_iters - 1)
-            
+            max_gens = trial.suggest_int("max_generations", 100, 150)
             arc_size = trial.suggest_int("archive_size", 10, 50)
-            lahc_l = trial.suggest_int("lahc_l", 10, 100)
-            solver = HybridSPEALAHC(pop_size, arc_size, max_gens, lahc_iters, lahc_l)
+            lahc_iters = trial.suggest_int("lahc_iters", 20, 75)
+            lahc_l = trial.suggest_int("lahc_l", 2, lahc_iters)
+            solver = HybridSPEALAHC(75, arc_size, max_gens, lahc_iters, lahc_l)
 
         results = []
         for file in TARGET_FILES:
