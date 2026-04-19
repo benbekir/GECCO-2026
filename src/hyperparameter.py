@@ -100,6 +100,7 @@ def create_objective(algorithm_choice: Algorithms):
 
         results = []
         for file in TARGET_FILES:
+            print(f"File: {file}")
             filepath = os.path.join(instances_dir, file)
             encoding = parser.parse_benchmark(filepath)
             best_candidate, _ = solver.solve(encoding)
