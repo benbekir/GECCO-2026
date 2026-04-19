@@ -9,13 +9,13 @@ import copy
 import os
 
 class HybridSPEALAHC(FJSSPAlgorithm):
-    def __init__(self, pop_size=40, archive_size=20, max_generations=50, lahc_iters=25, lahc_l=10):
+    def __init__(self, pop_size=40, archive_size=20, max_generations=50, lahc_iters=25, lahc_l=10, mutation_rate=0.03):
         self.pop_size = pop_size
         self.archive_size = archive_size
         self.max_generations = max_generations
         self.lahc_iters = lahc_iters  
         self.lahc_l = lahc_l
-        self.mutation_rate = 0.03
+        self.mutation_rate = mutation_rate
 
     def __get_neighbor(self, encoding: WorkerEncoding, machines_for_ops, candidate: Candidate):
         new_ordered_ops = copy.deepcopy(candidate.ordered_ops)

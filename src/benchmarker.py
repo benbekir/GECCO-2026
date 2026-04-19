@@ -4,6 +4,7 @@ import json
 import sys
 import pandas as pd
 import numpy as np
+import argparse
 from scipy.stats import mannwhitneyu
 # NOTE: this block is only here for convenience, so that it is possible to run this file directly
 # its possible to remove this block and just run this file using "python -m src.benchmarker"
@@ -51,18 +52,15 @@ class BenchmarkRunner:
                     start_time = time.time()
                     encoding = parser.parse_benchmark(filepath)
                     
-                    # Computationally expensive part
                     best_candidate, history = algorithm.solve(encoding)
                     
                     _, machines, workers = best_candidate.get_sequences()
                     c_workload_balance = workload_balance(machines, workers, encoding.durations())
                     runtime = time.time() - start_time
 
-                    # 1. Update history JSON immediately
                     if run_idx == 0:
                         self._update_history_json(hist_path, filename, history)
 
-                    # 2. Create a single-row result dictionary
                     run_data = {
                         "Algorithm": name,
                         "Instance": filename,
@@ -72,7 +70,7 @@ class BenchmarkRunner:
                         "Runtime": round(runtime, 2)
                     }
 
-                    df = pd.DataFrame([run_data]) # Note: list wrapping the dict
+                    df = pd.DataFrame([run_data])
                     file_exists = os.path.isfile(output_path)
                     df.to_csv(output_path, mode='a', index=False, header=not file_exists)
                     
@@ -110,11 +108,9 @@ class BenchmarkRunner:
         global_ps_scores = {algo: [] for algo in algorithms}
 
         for inst in instances:
-            # Filter data for this specific instance
             inst_df = df[df['Instance'] == inst]
             
             for algo_a in algorithms:
-                # Extract all makespans for Algo A as a list/series
                 data_a = inst_df[inst_df['Algorithm'] == algo_a]['Makespan'].values
                 if len(data_a) == 0: continue
                 
@@ -124,15 +120,11 @@ class BenchmarkRunner:
                     data_b = inst_df[inst_df['Algorithm'] == algo_b]['Makespan'].values
                     if len(data_b) == 0: continue
                     
-                    # Statistical comparison
                     stat, _ = mannwhitneyu(data_a, data_b, alternative='two-sided')
-                    
-                    # Probability of Superiority (PS)
                     n1, n2 = len(data_a), len(data_b)
                     ps = ((n1 * n2) - stat) / (n1 * n2)
                     global_ps_scores[algo_a].append(ps)
 
-        # Final Leaderboard Logic
         leaderboard = sorted([(algo, np.mean(scores)) for algo, scores in global_ps_scores.items() if scores], 
                              key=lambda x: x[1], reverse=True)
 
@@ -147,14 +139,12 @@ class BenchmarkRunner:
                 data = json.load(f)
             
             algo_name = os.path.basename(file_path).replace("_history.json", "")
-            # we cant plot greedy algorithm converge
             if algo_name == "GREEDY":
                 continue
             
             if instance_name in data:
                 history = data[instance_name]
                 
-                # Handle both list of values or list of [iter, value] pairs
                 if isinstance(history[0], list):
                     iters = [h[0] for h in history]
                     values = [h[1] for h in history]
@@ -162,7 +152,6 @@ class BenchmarkRunner:
                     values = history
                     iters = list(range(len(history)))
 
-                # Normalize x-axis to 0-100% progress
                 max_i = max(iters) if iters else 1
                 progress = [(i / max_i) * 100 for i in iters]
                 
@@ -190,29 +179,18 @@ class BenchmarkRunner:
             return
             
         df = pd.concat(dfs, ignore_index=True)
-
-        # 2. Group by Instance and Algorithm to get the mean makespan
-        # This handles the case where K > 1 automatically
         summary_df = df.groupby(['Instance', 'Algorithm'])['Makespan'].mean().reset_index()
-
-        # 3. Pivot the data so instances are rows and algorithms are columns
         pivot_df = summary_df.pivot(index='Instance', columns='Algorithm', values='Makespan')
 
-        # 4. Plotting
         ax = pivot_df.plot(kind='bar', figsize=(12, 7), width=0.8)
-
         plt.title('Algorithm Comparison: Average Makespan per Instance', fontsize=14)
         plt.xlabel('Instance', fontsize=12)
         plt.ylabel('Mean Makespan (Lower is Better)', fontsize=12)
-        
-        # Improve layout
         plt.xticks(rotation=45, ha='right')
         plt.legend(title='Algorithm', bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.grid(axis='y', linestyle='--', alpha=0.6)
-
         plt.tight_layout()
         
-        # Save and show
         output_name = 'results/overall_comparison_bars.png'
         plt.savefig(output_name, dpi=300)
         print(f"Bar chart saved to {output_name}")
@@ -225,22 +203,61 @@ def main() -> None:
     from src.algorithms.spea import SPEA2Solver
     from src.algorithms.spea_lahc import HybridSPEALAHC
 
-    K = 10
+    parser = argparse.ArgumentParser(description="GECCO 2026 Benchmarking Suite")
+    subparsers = parser.add_subparsers(dest="command", help="Sub-command to run")
+
+    run_parser = subparsers.add_parser("run", help="Run benchmarks")
+    run_parser.add_argument("--k", type=int, default=10, help="Number of runs per instance")
+    run_parser.add_argument("--alg", nargs="*", help="Specific algorithm(s) to run (e.g., LAHC HYBRID)")
+
+    conv_parser = subparsers.add_parser("convergence", help="Plot convergence")
+    conv_parser.add_argument("files", nargs="*", default=["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"], 
+                             help="JSON history files")
+    conv_parser.add_argument("--instance", type=str, default="2c_Hurink_rdata_28_workers.fjs", help="Instance name to plot")
+
+    plot_parser = subparsers.add_parser("plot", help="Plot comparison bars")
+    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.csv", "results/HYBRID.csv", "results/SPEA-II.csv", "results/GREEDY.csv"], 
+                             help="CSV result files")
+
+    rank_parser = subparsers.add_parser("rank", help="Perform weighted ranking")
+    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.csv", "results/HYBRID.csv", "results/SPEA-II.csv", "results/GREEDY.csv"], 
+                             help="CSV result files")
+
+    args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(["--help"])
+
     runner = BenchmarkRunner("instances/fjssp-w")
-    algorithms: dict[str, FJSSPAlgorithm] = {
-        #"LAHC": LAHCSolver(L=170, max_iters=54_755),
-        #"ML": MLSolver(Strategy=Strategy.PLUS, M=152, L=304, max_generations=500),
-        #"GREEDY": GreedyFJSSPWSolver(),
-        #"SPEA-II": SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
-        "HYBRID": HybridSPEALAHC(pop_size=30, max_generations=100, lahc_iters=500, archive_size=20, lahc_l=50)
-    }
-    
-    res_files, hist_files = runner.run_benchmark(algorithms, k=K)
-    #res_files = ["results/other.csv", "results/SPEA-II.csv", "results/GREEDY.csv", "results/LAHC.csv", "results/HYBRID.csv"]
-    #runner.perform_weighted_ranking(res_files)
-    #hist_files = ["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"]
-    #runner.plot_convergence(hist_files, "5_Kacem_4_workers.fjs")
-    #runner.plot_bars(res_files)
-    
+
+    if args.command == "run":
+        available_algorithms = {
+            "LAHC": lambda: LAHCSolver(L=200, max_iters=200_000),
+            "HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
+            "SPEA-II": lambda: SPEA2Solver(pop_size=315, archive_size=128, max_generations=500),
+            "ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
+            "GREEDY": lambda: GreedyFJSSPWSolver()
+        }
+
+        target_names = args.alg if args.alg else list(available_algorithms.keys())
+        selected_algorithms = {}
+        for name in target_names:
+            if name in available_algorithms:
+                selected_algorithms[name] = available_algorithms[name]()
+            else:
+                print(f"Warning: Algorithm '{name}' not found. Skipping.")
+
+        if not selected_algorithms:
+            print("Error: No valid algorithms selected.")
+            return
+
+        runner.run_benchmark(selected_algorithms, k=args.k)
+
+    elif args.command == "convergence":
+        runner.plot_convergence(args.files, args.instance)
+
+    elif args.command == "plot":
+        runner.plot_bars(args.files)
+
+    elif args.command == "rank":
+        runner.perform_weighted_ranking(args.files)
+
 if __name__ == "__main__":
     main()
