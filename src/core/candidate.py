@@ -20,7 +20,7 @@ class Candidate:
 
         seq, mach, work = self.get_sequences()
         start_times, m_fixed, w_fixed = evaluation.translate(seq, mach, work, encoding.durations())
-        self.makespan = evaluation.makespan(start_times, m_fixed, w_fixed, encoding.durations())
+        self.makespan = float(evaluation.makespan(start_times, m_fixed, w_fixed, encoding.durations()))
     
     @classmethod
     def from_sequences(cls, job_seq: list[int], machine_worker_pairs: list[tuple], encoding: WorkerEncoding):
