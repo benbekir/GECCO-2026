@@ -104,28 +104,24 @@ class BenchmarkRunner:
     
     def merge_results(self, algorithm_name: str):
         """
-        Merges all individual instance JSON files for a specific algorithm 
-        into a single master JSON file.
+        Merges individual result JSONs into a MASTER list,
+        and individual history JSONs into a MASTER dictionary.
         """
         merged_data = []
-        search_pattern = f"{algorithm_name}_"
-        master_filename = f"{algorithm_name}_MASTER.json"
+        merged_history = {}
         
-        files_to_merge = [
-            f for f in os.listdir("results") 
-            if f.startswith(search_pattern) 
-            and f.endswith(".json") 
-            and "_history" not in f 
-            and f != master_filename
-        ]
+        search_pattern = f"{algorithm_name}_"
+        master_results_name = f"{algorithm_name}.json"
+        master_history_name = f"{algorithm_name}_history.json"
+        
+        all_files = os.listdir("results")
+        result_files = [f for f in all_files if f.startswith(search_pattern) and f.endswith(".json") 
+                        and "_history" not in f and f != master_results_name]
+        history_files = [f for f in all_files if f.startswith(search_pattern) and f.endswith("_history.json") 
+                         and f != master_history_name]
 
-        if not files_to_merge:
-            print(f"No individual result files found for algorithm: {algorithm_name}")
-            return
-
-        print(f"Found {len(files_to_merge)} files. Merging...")
-
-        for filename in files_to_merge:
+        print(f"Merging {len(result_files)} result files...")
+        for filename in result_files:
             path = os.path.join("results", filename)
             with open(path, 'r') as f:
                 try:
@@ -133,13 +129,29 @@ class BenchmarkRunner:
                     if isinstance(data, list):
                         merged_data.extend(data)
                 except json.JSONDecodeError:
-                    print(f"Warning: Could not parse {filename}. Skipping.")
+                    print(f"Warning: Failed to parse result file {filename}")
 
-        master_path = os.path.join("results", master_filename)
-        with open(master_path, 'w') as f:
+        print(f"Merging {len(history_files)} history files...")
+        for filename in history_files:
+            path = os.path.join("results", filename)
+            with open(path, 'r') as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        # This merges the dictionaries. If keys (instance names) 
+                        # are the same, the last one loaded wins.
+                        merged_history.update(data)
+                except json.JSONDecodeError:
+                    print(f"Warning: Failed to parse history file {filename}")
+
+        # 4. Save both Master files
+        with open(os.path.join("results", master_results_name), 'w') as f:
             json.dump(merged_data, f, indent=4)
+            
+        with open(os.path.join("results", master_history_name), 'w') as f:
+            json.dump(merged_history, f, indent=4)
         
-        print(f"Successfully merged {len(merged_data)} total runs into {master_path}")
+        print(f"Done! Created {master_results_name} and {master_history_name}")
 
     def perform_weighted_ranking(self, file_paths: list[str]):
         """
@@ -279,12 +291,11 @@ def main() -> None:
 
     if args.command == "run":
         available_algorithms = {
-            #"LAHC": lambda: LAHCSolver(L=3000, max_iters=300_000),
-            #"HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
-            "SPEA-II": lambda: SPEA2Solver(pop_size=378,archive_size=110,max_generations=500,mutation_rate=0.03663189655760893,mutation_limit=40,nuke_limit=70,TABU_THRESHOLD=20,TABU_DURATION=15)
-,
-            #"ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
-            #"GREEDY": lambda: GreedyFJSSPWSolver()
+            "LAHC": lambda: LAHCSolver(L=3000, max_iters=300_000),
+            "HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
+            "SPEA-II": lambda: SPEA2Solver(pop_size=378,archive_size=110,max_generations=500,mutation_rate=0.03663189655760893,mutation_limit=40,nuke_limit=70,TABU_THRESHOLD=20,TABU_DURATION=15),
+            "ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
+            "GREEDY": lambda: GreedyFJSSPWSolver()
         }
 
         target_names = args.alg if args.alg else list(available_algorithms.keys())
