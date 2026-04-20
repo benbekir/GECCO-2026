@@ -71,7 +71,9 @@ def create_objective(algorithm_choice: Algorithms):
             mut = trial.suggest_float("mutation_rate", 0.01, 0.2)
             mut_lim = trial.suggest_int("tracker_limit_mutation", 15, 60, step=5)
             nuke_lim = trial.suggest_int("tracker_limit_nuke", 60, 150, step=10)
-            solver = SPEA2Solver(pop, arc, 150, mut, mut_lim, nuke_lim)
+            tabu_lim=trial.suggest_int("tracker_tabu_limit",20,80,step=5)
+            tabu_duration=trial.suggest_int("tracker_tabu_duration",10,50,step=5)
+            solver = SPEA2Solver(pop, arc, 150, mut, mut_lim, nuke_lim,tabu_lim,tabu_duration)
 
         elif algorithm_choice == Algorithms.LAHC:
             L = trial.suggest_int("L", 10, 500)
@@ -105,7 +107,7 @@ def create_objective(algorithm_choice: Algorithms):
     return objective
 
 if __name__ == "__main__":
-    MY_CHOICE = Algorithms.HYBRID
+    MY_CHOICE = Algorithms.SPEA2
     
     study = optuna.create_study(direction="minimize")
     study.set_user_attr("algorithm_name", MY_CHOICE.name)

@@ -2,15 +2,20 @@ from src.core.fjssp_algorithm import FJSSPAlgorithm
 from src.core.candidate import Candidate, Operation,WorkerEncoding
 from src.algorithms.aspea import Instance, density_function, environmental_selection, binary_tournament, calculate_fitness
 import src.util.evaluation as evaluation
+from src.algorithms.tabu import TabuLocalSearch
+
 
 class SPEA2Solver(FJSSPAlgorithm):
-    def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1,mutation_limit=50,nuke_limit=150):
+    def __init__(self, pop_size=200, archive_size=50, max_generations=500,mutation_rate=0.1,mutation_limit=50,nuke_limit=150,TABU_THRESHOLD=50,TABU_DURATION=30):
         self.pop_size = pop_size
         self.archive_size = archive_size
         self.max_generations = max_generations
         self.base_mutation = mutation_rate
         self.nuke_limit=nuke_limit
         self.mutation_limit=mutation_limit
+        self.TABU_THRESHOLD = TABU_THRESHOLD
+        self.TABU_DURATION=TABU_DURATION
+
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
         population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
@@ -26,7 +31,8 @@ class SPEA2Solver(FJSSPAlgorithm):
             combined = density_function(population, archive)
             archive = environmental_selection(combined, self.archive_size)
             current_best = min(ind.makespan for ind in archive)
-         
+            current_best_instance = min(archive, key=lambda x: x.makespan)
+
             history_best_makespan.append((gen, current_best))
             SIGNIFICANCE_THRESHOLD = max(5, global_best_makespan * 0.005)
             if global_best_makespan - current_best > SIGNIFICANCE_THRESHOLD:
@@ -35,6 +41,22 @@ class SPEA2Solver(FJSSPAlgorithm):
                 current_mutation = self.base_mutation
             else:
                 tracker += 1
+
+            if tracker == self.nuke_limit:
+                print(f"Gen {gen}: Stagnation detected. Refining Archive via Tabu Search...")
+                refined_best = TabuLocalSearch.tabu_search(
+                    current_best_instance, 
+                    iterations=50, 
+                    tabu_size=20
+                )
+                archive[0] = refined_best
+                global_best_makespan = refined_best.makespan
+                if refined_best.makespan < archive[0].makespan:
+                    print(f" Tabu success! {archive[0].makespan} -> {refined_best.makespan}")
+                    archive[0] = refined_best
+                else:
+                    print("Tabu didn't find an improvement")
+
             if tracker > self.nuke_limit:
                 archive = [min(archive, key=lambda x: x.makespan)]
                 population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
