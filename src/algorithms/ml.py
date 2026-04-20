@@ -14,6 +14,9 @@ class MLSolver(FJSSPAlgorithm):
         self.M = kwargs.get('M', 10)
         self.L = kwargs.get('L', 50)
         self.max_generations = kwargs.get('max_generations', 50)
+    
+    def get_evaluations(self) -> int:
+        return int(self.M + (self.L * self.max_generations))
 
     def __create_candidate(self, encoding: WorkerEncoding, machines_for_ops, schedule, machine_ready_times, operation_ready_times, worker_ready_times, ordered_ops, next_op_by_job, last_operation_by_job, active_jobs) -> Candidate:
         # populate schedule for each machine

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
 import matplotlib.pyplot as plt
 from src.util.benchmark_parser import WorkerBenchmarkParser
-from src.util.evaluation import workload_balance
+from src.util.evaluation import translate
 
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
@@ -37,7 +37,7 @@ class BenchmarkRunner:
                 if filter and filename not in filter:
                     continue
                 
-                output_path = f"results/{name}_{filename}.csv"
+                output_path = f"results/{name}_{filename}.json"
                 hist_path = f"results/{name}_{filename}_history.json"
                 
                 created_result_files.append(output_path)
@@ -46,15 +46,18 @@ class BenchmarkRunner:
                 filepath = os.path.join(self.instances_dir, filename)
                 print(f"Running File: {filename}...", flush=True)
                 
+                instance_results = []
+                
                 for run_idx in range(k):
                     print(f"\tRun: {run_idx + 1}/{k}")
                     start_time = time.time()
                     encoding = parser.parse_benchmark(filepath)
                     
                     best_candidate, history = algorithm.solve(encoding)
+
+                    sequence, machines, workers = best_candidate.get_sequences()
+                    start_times, m_fixed, w_fixed = translate(sequence, machines, workers, encoding.durations())
                     
-                    _, machines, workers = best_candidate.get_sequences()
-                    c_workload_balance = workload_balance(machines, workers, encoding.durations())
                     runtime = time.time() - start_time
 
                     if run_idx == 0:
@@ -64,18 +67,23 @@ class BenchmarkRunner:
                         "Algorithm": name,
                         "Instance": filename,
                         "Run_ID": run_idx + 1,
-                        "Makespan": best_candidate.makespan,
-                        "Workload Balance": round(c_workload_balance, 2),
-                        "Runtime": round(runtime, 2)
+                        "Makespan": float(best_candidate.makespan),
+                        "Balance": round(best_candidate.get_balance(), 2),
+                        "Evaluations": algorithm.get_evaluations(),
+                        "Runtime": round(runtime, 2),
+                        "start_times": [int(t) for t in start_times],
+                        "machine_assignments": [int(m) for m in m_fixed],
+                        "worker_assignments": [int(w) for w in w_fixed]
                     }
-
-                    df = pd.DataFrame([run_data])
-                    file_exists = os.path.isfile(output_path)
-                    df.to_csv(output_path, mode='a', index=False, header=not file_exists)
+                    
+                    instance_results.append(run_data)
+                    
+                    with open(output_path, 'w') as f:
+                        json.dump(instance_results, f, indent=4)
                     
                     print(f"\tRun {run_idx + 1} saved (Makespan: {best_candidate.makespan})")
 
-                print(f"  Completed all runs for {filename}.")
+                print(f"Completed all runs for {filename}.")
 
         return created_result_files, created_history_files
 
@@ -93,6 +101,45 @@ class BenchmarkRunner:
         
         with open(path, 'w') as f:
             json.dump(data, f)
+    
+    def merge_results(self, algorithm_name: str):
+        """
+        Merges all individual instance JSON files for a specific algorithm 
+        into a single master JSON file.
+        """
+        merged_data = []
+        search_pattern = f"{algorithm_name}_"
+        master_filename = f"{algorithm_name}_MASTER.json"
+        
+        files_to_merge = [
+            f for f in os.listdir("results") 
+            if f.startswith(search_pattern) 
+            and f.endswith(".json") 
+            and "_history" not in f 
+            and f != master_filename
+        ]
+
+        if not files_to_merge:
+            print(f"No individual result files found for algorithm: {algorithm_name}")
+            return
+
+        print(f"Found {len(files_to_merge)} files. Merging...")
+
+        for filename in files_to_merge:
+            path = os.path.join("results", filename)
+            with open(path, 'r') as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        merged_data.extend(data)
+                except json.JSONDecodeError:
+                    print(f"Warning: Could not parse {filename}. Skipping.")
+
+        master_path = os.path.join("results", master_filename)
+        with open(master_path, 'w') as f:
+            json.dump(merged_data, f, indent=4)
+        
+        print(f"Successfully merged {len(merged_data)} total runs into {master_path}")
 
     def perform_weighted_ranking(self, file_paths: list[str]):
         """
@@ -210,6 +257,9 @@ def main() -> None:
     run_parser.add_argument("--alg", nargs="*", help="Specific algorithm(s) to run (e.g., LAHC HYBRID)")
     run_parser.add_argument("--files", nargs="*", help="Files to run the benchmarks on")
 
+    merge_parser = subparsers.add_parser("merge", help="Merge instance JSONs into one master file")
+    merge_parser.add_argument("--alg", type=str, required=True, help="Algorithm name to merge (e.g., LAHC)")
+
     conv_parser = subparsers.add_parser("convergence", help="Plot convergence")
     conv_parser.add_argument("files", nargs="*", default=["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"], 
                              help="JSON history files")
@@ -250,6 +300,9 @@ def main() -> None:
             return
 
         runner.run_benchmark(selected_algorithms, k=args.k, filter=args.files)
+
+    elif args.command == "merge":
+        runner.merge_results(args.alg)
 
     elif args.command == "convergence":
         runner.plot_convergence(args.files, args.instance)

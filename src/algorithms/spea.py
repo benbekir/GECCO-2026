@@ -16,6 +16,10 @@ class SPEA2Solver(FJSSPAlgorithm):
         self.TABU_THRESHOLD = TABU_THRESHOLD
         self.TABU_DURATION=TABU_DURATION
 
+
+    def get_evaluations(self) -> int:
+        return int(self.pop_size * self.max_generations)
+
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
         population = [Instance(encoding, all_options) for _ in range(self.pop_size)]
