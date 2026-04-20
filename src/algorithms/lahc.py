@@ -140,7 +140,7 @@ class LAHCSolver(FJSSPAlgorithm):
             
             if i % 1000 == 0:
                 if i % 10_000 == 0:
-                    print(f"Iteration {i}/{self.max_iters}")
+                    print(f"\t\tIteration {i}/{self.max_iters}")
                 progression.append((i, best.makespan))
 
         return best, progression
