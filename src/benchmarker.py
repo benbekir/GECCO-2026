@@ -28,7 +28,6 @@ class BenchmarkRunner:
         parser = WorkerBenchmarkParser()
         created_result_files = list[str]()
         created_history_files = list[str]()
-
         os.makedirs("results", exist_ok=True)
 
         for name, algorithm in algorithms.items():
@@ -209,6 +208,7 @@ def main() -> None:
     run_parser = subparsers.add_parser("run", help="Run benchmarks")
     run_parser.add_argument("--k", type=int, default=10, help="Number of runs per instance")
     run_parser.add_argument("--alg", nargs="*", help="Specific algorithm(s) to run (e.g., LAHC HYBRID)")
+    run_parser.add_argument("--files", nargs="*", help="Files to run the benchmarks on")
 
     conv_parser = subparsers.add_parser("convergence", help="Plot convergence")
     conv_parser.add_argument("files", nargs="*", default=["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"], 
@@ -229,7 +229,7 @@ def main() -> None:
 
     if args.command == "run":
         available_algorithms = {
-            "LAHC": lambda: LAHCSolver(L=200, max_iters=200_000),
+            "LAHC": lambda: LAHCSolver(L=200, max_iters=500_000),
             "HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
             "SPEA-II": lambda: SPEA2Solver(pop_size=315, archive_size=128, max_generations=500),
             "ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
@@ -248,7 +248,7 @@ def main() -> None:
             print("Error: No valid algorithms selected.")
             return
 
-        runner.run_benchmark(selected_algorithms, k=args.k)
+        runner.run_benchmark(selected_algorithms, k=args.k, filter=args.files)
 
     elif args.command == "convergence":
         runner.plot_convergence(args.files, args.instance)
