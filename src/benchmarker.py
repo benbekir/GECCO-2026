@@ -231,7 +231,7 @@ def main() -> None:
         available_algorithms = {
             "LAHC": lambda: LAHCSolver(L=3000, max_iters=300_000),
             "HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
-            "SPEA-II": lambda: SPEA2Solver(pop_size=315, archive_size=128, max_generations=500),
+            "SPEA-II": lambda: SPEA2Solver(pop_size=315,archive_size=128,max_generations=500,mutation_rate=0.02828977853657342,mutation_limit=55,nuke_limit=80),
             "ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
             "GREEDY": lambda: GreedyFJSSPWSolver()
         }
