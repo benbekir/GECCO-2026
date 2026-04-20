@@ -11,6 +11,10 @@ class SPEA2Solver(FJSSPAlgorithm):
         self.base_mutation = mutation_rate
         self.nuke_limit=nuke_limit
         self.mutation_limit=mutation_limit
+
+    def get_evaluations(self) -> int:
+        return int(self.pop_size * self.max_generations)
+
     def solve(self, encoding: WorkerEncoding) -> tuple[Candidate, list]:
         all_options = Instance.create_options(encoding)
         population = [Instance(encoding, all_options) for _ in range(self.pop_size)]

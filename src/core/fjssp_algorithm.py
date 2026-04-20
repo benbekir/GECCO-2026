@@ -5,3 +5,7 @@ class FJSSPAlgorithm(ABC):
     @abstractmethod
     def solve(self, encoding) -> tuple[Candidate, list]:
         pass
+
+    @abstractmethod
+    def get_evaluations(self) -> int:
+        pass

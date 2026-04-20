@@ -16,6 +16,9 @@ class HybridSPEALAHC(FJSSPAlgorithm):
         self.lahc_iters = lahc_iters  
         self.lahc_l = lahc_l
         self.mutation_rate = mutation_rate
+    
+    def get_evaluations(self) -> int:
+        return int(self.pop_size * self.lahc_iters * self.max_generations)
 
     def __get_neighbor(self, encoding: WorkerEncoding, machines_for_ops, candidate: Candidate):
         new_ordered_ops = copy.deepcopy(candidate.ordered_ops)

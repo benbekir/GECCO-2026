@@ -9,6 +9,9 @@ class LAHCSolver(FJSSPAlgorithm):
         self.L = kwargs.get('L', 50)
         self.max_iters = kwargs.get('max_iters', 10000)
 
+    def get_evaluations(self) -> int:
+        return int(self.max_iters)
+
     def __get_initial_candidate(self, encoding: WorkerEncoding, machines_for_ops, last_operation_by_job):
         num_jobs = encoding.n_jobs()
         num_machines = encoding.n_machines()

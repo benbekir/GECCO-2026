@@ -13,6 +13,9 @@ class GreedyFJSSPWSolver(FJSSPAlgorithm):
                 return index
             index += 1
         return None
+    
+    def get_evaluations(self) -> int:
+        return 1
 
     def determine_next(self, next_operation, durations, job_sequence, counts):
         next_durations = [0] * len(next_operation)
