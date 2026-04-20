@@ -229,7 +229,7 @@ def main() -> None:
 
     if args.command == "run":
         available_algorithms = {
-            "LAHC": lambda: LAHCSolver(L=200, max_iters=500_000),
+            "LAHC": lambda: LAHCSolver(L=200, max_iters=200_000),
             "HYBRID": lambda: HybridSPEALAHC(pop_size=40, max_generations=200, lahc_iters=300, archive_size=20, lahc_l=75, mutation_rate=0.03),
             "SPEA-II": lambda: SPEA2Solver(pop_size=315, archive_size=128, max_generations=500),
             "ML": lambda: MLSolver(strategy=Strategy.PLUS, M=10, L=50, max_generations=50),
