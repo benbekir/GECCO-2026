@@ -32,16 +32,16 @@ class BenchmarkRunner:
 
         for name, algorithm in algorithms.items():
             print(f"Starting Algorithm: {name}")
-            
-            output_path = f"results/{name}.csv"
-            hist_path = f"results/{name}_history.json"
-            
-            created_result_files.append(output_path)
-            created_history_files.append(hist_path)
 
             for filename in self.files:
                 if filter and filename not in filter:
                     continue
+                
+                output_path = f"results/{name}_{filename}.csv"
+                hist_path = f"results/{name}_{filename}_history.json"
+                
+                created_result_files.append(output_path)
+                created_history_files.append(hist_path)
 
                 filepath = os.path.join(self.instances_dir, filename)
                 print(f"Running File: {filename}...", flush=True)
