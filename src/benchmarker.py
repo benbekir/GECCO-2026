@@ -286,11 +286,11 @@ def main() -> None:
     conv_parser.add_argument("--instance", type=str, default="2c_Hurink_rdata_28_workers.fjs", help="Instance name to plot")
 
     plot_parser = subparsers.add_parser("plot", help="Plot comparison bars")
-    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json"], 
+    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
                              help="JSON result files")
 
     rank_parser = subparsers.add_parser("rank", help="Perform weighted ranking")
-    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json"], 
+    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
                              help="JSON result files")
 
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(["--help"])
