@@ -37,7 +37,8 @@ class SPEA2Solver(FJSSPAlgorithm):
             current_best = min(ind.makespan for ind in archive)
             current_best_instance = min(archive, key=lambda x: x.makespan)
 
-            history_best_makespan.append((gen, current_best))
+            if gen % 100 == 0:
+                history_best_makespan.append((gen, current_best))
             SIGNIFICANCE_THRESHOLD = max(5, global_best_makespan * 0.005)
             if global_best_makespan - current_best > SIGNIFICANCE_THRESHOLD:
                 global_best_makespan = current_best
