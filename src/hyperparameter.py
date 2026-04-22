@@ -42,7 +42,7 @@ TARGET_FILES = [
 def save_best_callback(study, trial):
     """Callback to save results whenever a new best trial is found."""
     if study.best_trial.number == trial.number:
-        filename = f"results/best_params_{study.user_attrs['algorithm_name'].lower()}.json"
+        filename = f"results/params/best_params_{study.user_attrs['algorithm_name'].lower()}.json"
         
         # Prepare data for JSON
         best_params = study.best_params.copy()

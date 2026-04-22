@@ -157,9 +157,7 @@ class BenchmarkRunner:
         """
         Reads results from provided file paths and performs ranking.
         """
-        # Load all results
-        dfs = [pd.read_csv(fp) for fp in file_paths]
-        df = pd.concat(dfs, ignore_index=True)
+        df = self._read_json(file_paths)
 
         instances = df['Instance'].unique()
         algorithms = df['Algorithm'].unique()
@@ -220,23 +218,14 @@ class BenchmarkRunner:
         plt.ylabel("Makespan", fontsize=12)
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.3)
-        plt.savefig(f"results/plot_{instance_name}.png")
+        plt.savefig(f"results/plots/plot_{instance_name}.png")
         plt.show()
 
     def plot_bars(self, file_paths: list[str]):
         """
-        Reads results from CSV files, calculates averages, and plots a grouped bar chart.
+        Reads results from JSON files, calculates averages, and plots a grouped bar chart.
         """
-        dfs = []
-        for fp in file_paths:
-            if os.path.exists(fp):
-                dfs.append(pd.read_csv(fp))
-        
-        if not dfs:
-            print("No data found to plot bars.")
-            return
-            
-        df = pd.concat(dfs, ignore_index=True)
+        df = self._read_json(file_paths)
         summary_df = df.groupby(['Instance', 'Algorithm'])['Makespan'].mean().reset_index()
         pivot_df = summary_df.pivot(index='Instance', columns='Algorithm', values='Makespan')
 
@@ -249,10 +238,29 @@ class BenchmarkRunner:
         plt.grid(axis='y', linestyle='--', alpha=0.6)
         plt.tight_layout()
         
-        output_name = 'results/overall_comparison_bars.png'
+        output_name = 'results/plots/alg_makespan_comparison.png'
         plt.savefig(output_name, dpi=300)
         print(f"Bar chart saved to {output_name}")
         plt.show()
+
+    def _read_json(self, file_paths: list[str]) -> pd.DataFrame:
+        all_data = []
+        for fp in file_paths:
+            if os.path.exists(fp):
+                with open(fp, 'r') as f:
+                    try:
+                        data = json.load(f)
+                        if isinstance(data, list):
+                            all_data.extend(data)
+                        elif isinstance(data, dict):
+                            all_data.append(data)
+                    except json.JSONDecodeError:
+                        print(f"Warning: Could not parse {fp}. Skipping.")
+        
+        if not all_data:
+            raise Exception("No data found to plot bars.")
+            
+        return pd.DataFrame(all_data)
 
 def main() -> None:
     from src.algorithms.ml import MLSolver, Strategy
@@ -278,12 +286,12 @@ def main() -> None:
     conv_parser.add_argument("--instance", type=str, default="2c_Hurink_rdata_28_workers.fjs", help="Instance name to plot")
 
     plot_parser = subparsers.add_parser("plot", help="Plot comparison bars")
-    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.csv", "results/HYBRID.csv", "results/SPEA-II.csv", "results/GREEDY.csv"], 
-                             help="CSV result files")
+    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
+                             help="JSON result files")
 
     rank_parser = subparsers.add_parser("rank", help="Perform weighted ranking")
-    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.csv", "results/HYBRID.csv", "results/SPEA-II.csv", "results/GREEDY.csv"], 
-                             help="CSV result files")
+    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
+                             help="JSON result files")
 
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(["--help"])
 
