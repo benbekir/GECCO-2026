@@ -1,5 +1,11 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib import rcParams
 import statistics
+import json
+import pandas as pd
+from tabulate import tabulate
+import os
 
 def calculate_value(fitness, best):
     return ((fitness - best) / best)
@@ -198,3 +204,102 @@ def show_simulation_comparison(results : list[list[float]], labels : list[str], 
         fig.suptitle(title)
     
     plt.show()
+
+
+def generate_research_table(json_file_path):
+    with open(json_file_path, 'r') as f:
+        data = json.load(f)
+    
+    df = pd.DataFrame(data)
+
+    stats = df.groupby('Instance')['Makespan'].agg(['min', 'max', 'median', 'std']).reset_index()
+    stats.columns = ['Instance', 'Best', 'Worst', 'Median', 'Std']
+    stats['Instance'] = stats['Instance'].str.replace('_workers.fjs', '', regex=False)
+    stats = stats.round(2)
+    stats['Std'] = stats['Std'].fillna(0)
+
+    output_dir = "tables"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    base_name = os.path.splitext(os.path.basename(json_file_path))[0]
+
+
+    csv_path = os.path.join(output_dir, f"{base_name}_results.csv")
+    stats.to_csv(csv_path, index=False)
+
+    latex_path = os.path.join(output_dir, f"{base_name}_table.tex")
+    latex_output = stats.to_latex(index=False, 
+                                  caption=f"The statistical results of {base_name} for instances",
+                                  label=f"table:{base_name.lower()}_results",
+                                  column_format="lcccc")
+    with open(latex_path, 'w') as f:
+        f.write(latex_output)
+
+    txt_path = os.path.join(output_dir, f"{base_name}_formatted.txt")
+    pretty_table = tabulate(stats, headers='keys', tablefmt='pretty', showindex=False)
+    with open(txt_path, 'w') as f:
+        f.write(pretty_table)
+
+
+    print(f"Success! Saved 3 files in the /{output_dir} folder:")
+    print(f"   1. CSV:   {csv_path}")
+    print(f"   2. LaTeX: {latex_path}")
+    print(f"   3. Text:  {txt_path}")
+    
+    print("\n" + pretty_table)
+
+
+
+rcParams['pdf.fonttype'] = 42
+rcParams['ps.fonttype'] = 42
+
+def plot_correct_gantt(run_data):
+
+    starts = run_data['start_times']
+    machines = run_data['machine_assignments']
+    workers = run_data['worker_assignments']
+    
+
+    duration = 150 
+    
+    fig, (ax_m, ax_w) = plt.subplots(2, 1, figsize=(12, 8), sharex=False)
+    
+    job_hatches = ['', '///', '...', '\\\\', '***', 'ooo', 'xxx', '+++']
+    
+    for i in range(len(starts)):
+        m, w, s = machines[i], workers[i], starts[i]
+        job_id = i // 9 
+        hatch = job_hatches[job_id % len(job_hatches)]
+        
+        # Machine Plot
+        ax_m.add_patch(mpatches.Rectangle((s, m), duration, 0.8, 
+                       edgecolor='black', facecolor='white', hatch=hatch))
+        # Worker Plot
+        ax_w.add_patch(mpatches.Rectangle((s, w), duration, 0.8, 
+                       edgecolor='black', facecolor='white', hatch=hatch))
+
+    max_time = max(starts) + 500
+    for ax in [ax_m, ax_w]:
+        ax.set_xlim(0, max_time)
+
+        ax.grid(True, axis='x', linestyle='--', linewidth=0.5)
+
+    ax_m.set_title(f"Machine Schedule - Makespan: {run_data['Makespan']}")
+    ax_m.set_ylabel("Machine Index")
+    ax_m.set_yticks(range(max(machines) + 1))
+    
+    ax_w.set_title("Worker Allocation")
+    ax_w.set_ylabel("Worker Index")
+    ax_w.set_yticks(range(max(workers) + 1))
+    
+    plt.xlabel("Time Units")
+    plt.tight_layout()
+    plt.savefig("compliant_gantt.pdf")
+    plt.show()
+
+with open('results/LAHC.json', 'r') as f:
+    data = json.load(f)
+
+plot_correct_gantt(data[0])
+#generate_research_table('results/LAHC.json')
