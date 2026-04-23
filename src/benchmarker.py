@@ -2,22 +2,16 @@ import os
 import time
 import json
 import sys
+import argparse
 import pandas as pd
 import numpy as np
-import argparse
-from scipy.stats import mannwhitneyu
-# NOTE: this block is only here for convenience, so that it is possible to run this file directly
-# its possible to remove this block and just run this file using "python -m src.benchmarker"
-from pathlib import Path
-from typing import TYPE_CHECKING
-# Support direct execution (python src/benchmarker.py) by ensuring repo root is on sys.path.
-if __package__ is None or __package__ == "":
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-if TYPE_CHECKING:
-    from src.core.fjssp_algorithm import FJSSPAlgorithm
 import matplotlib.pyplot as plt
 from src.util.benchmark_parser import WorkerBenchmarkParser
 from src.util.evaluation import translate
+from scipy.stats import mannwhitneyu
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.core.fjssp_algorithm import FJSSPAlgorithm
 
 class BenchmarkRunner:
     def __init__(self, instances_dir: str):
@@ -275,22 +269,22 @@ def main() -> None:
     run_parser = subparsers.add_parser("run", help="Run benchmarks")
     run_parser.add_argument("--k", type=int, default=10, help="Number of runs per instance")
     run_parser.add_argument("--alg", nargs="*", help="Specific algorithm(s) to run (e.g., LAHC HYBRID)")
-    run_parser.add_argument("--files", nargs="*", help="Files to run the benchmarks on")
+    run_parser.add_argument("--instances", nargs="*", help="Instances to run the benchmarks on")
 
     merge_parser = subparsers.add_parser("merge", help="Merge instance JSONs into one master file")
     merge_parser.add_argument("--alg", type=str, required=True, help="Algorithm name to merge (e.g., LAHC)")
 
     conv_parser = subparsers.add_parser("convergence", help="Plot convergence")
-    conv_parser.add_argument("files", nargs="*", default=["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"], 
+    conv_parser.add_argument("--files", nargs="*", default=["results/HYBRID_history.json", "results/SPEA-II_history.json", "results/LAHC_history.json"], 
                              help="JSON history files")
     conv_parser.add_argument("--instance", type=str, default="2c_Hurink_rdata_28_workers.fjs", help="Instance name to plot")
 
     plot_parser = subparsers.add_parser("plot", help="Plot comparison bars")
-    plot_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
+    plot_parser.add_argument("--files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
                              help="JSON result files")
 
     rank_parser = subparsers.add_parser("rank", help="Perform weighted ranking")
-    rank_parser.add_argument("files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
+    rank_parser.add_argument("--files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
                              help="JSON result files")
 
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(["--help"])
@@ -318,7 +312,7 @@ def main() -> None:
             print("Error: No valid algorithms selected.")
             return
 
-        runner.run_benchmark(selected_algorithms, k=args.k, filter=args.files)
+        runner.run_benchmark(selected_algorithms, k=args.k, filter=args.instances)
 
     elif args.command == "merge":
         runner.merge_results(args.alg)

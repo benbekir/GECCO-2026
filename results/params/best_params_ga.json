@@ -1,4 +1,5 @@
 {
-    'strategy': Strategy.PLUS,
-    'M': 152, 'L': 304
+    "strategy": "Strategy.PLUS",
+    "M": 152, 
+    "L": 304
 }

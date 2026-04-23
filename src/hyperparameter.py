@@ -1,21 +1,16 @@
-from pathlib import Path
 import os
-import sys
+import optuna
+import json
 from typing import TYPE_CHECKING
-# Support direct execution (python src/benchmarker.py) by ensuring repo root is on sys.path.
-if __package__ is None or __package__ == "":
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
-import optuna
+from enum import Enum
 from src.algorithms.spea import SPEA2Solver
 from src.algorithms.lahc import LAHCSolver
 from src.algorithms.spea_lahc import HybridSPEALAHC
 from src.algorithms.ml import MLSolver
 from src.algorithms.ml import Strategy
 from src.util.benchmark_parser import WorkerBenchmarkParser
-from enum import Enum
-import json
 
 class Algorithms(Enum):
      SPEA2=1
@@ -78,7 +73,9 @@ def create_objective(algorithm_choice: Algorithms):
         elif algorithm_choice == Algorithms.LAHC:
             L = trial.suggest_int("L", 10, 500)
             max_iters = trial.suggest_int("Max_iterations", 5000, 75000, log=True)
-            solver = LAHCSolver(L=L, max_iters=max_iters)
+            p_mut = trial.suggest_float("p_mut", 0.1, 0.45)
+            p_swap = trial.suggest_float("p_swap", 0.1, 0.45)
+            solver = LAHCSolver(L=L, max_iters=max_iters, p_mut=p_mut, p_swap=p_swap)
 
         elif algorithm_choice == Algorithms.ML:
             strat = trial.suggest_categorical("strategy", [Strategy.PLUS, Strategy.COMMA])
@@ -107,7 +104,7 @@ def create_objective(algorithm_choice: Algorithms):
     return objective
 
 if __name__ == "__main__":
-    MY_CHOICE = Algorithms.SPEA2
+    MY_CHOICE = Algorithms.LAHC
     
     study = optuna.create_study(direction="minimize")
     study.set_user_attr("algorithm_name", MY_CHOICE.name)

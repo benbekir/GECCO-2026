@@ -8,6 +8,8 @@ class LAHCSolver(FJSSPAlgorithm):
     def __init__(self, **kwargs):
         self.L = kwargs.get('L', 50)
         self.max_iters = kwargs.get('max_iters', 10000)
+        self.p_mut = kwargs.get('p_mut', 0.4)
+        self.p_swap = kwargs.get('p_swap', 0.4)
 
     def get_evaluations(self) -> int:
         return int(self.max_iters)
@@ -72,7 +74,7 @@ class LAHCSolver(FJSSPAlgorithm):
         mutation_type = random.random()
 
         # change machine and worker assignment
-        if mutation_type < 0.4:
+        if mutation_type < self.p_mut:
             # we do not have to check if new machine and worker are free
             # since in that case, the translate function will simply delay the start time
             op = new_ordered_ops[idx1]
@@ -86,7 +88,7 @@ class LAHCSolver(FJSSPAlgorithm):
             op.duration = encoding.durations()[op.operation_index][new_m][new_w]
 
         # swap the job order of two operations
-        elif mutation_type < 0.8:
+        elif mutation_type < (self.p_mut + self.p_swap):
             # making a change from job ids [0,2,*2*] to [*2*,2,0] wouldn't break anything 
             # because machine and worker assignments are operation specific and operations are always executed in order.
             # therefore, the resulting change would be [job 0 op 0, job 2 op 0, job 2 op 1] to [job 2 op 0, job 2 op 1, job 0 op 0].
