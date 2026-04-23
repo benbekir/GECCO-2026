@@ -13,7 +13,7 @@ The project is structured as follows:
     - **fjssp/**: Original FJSSP benchmark instances.
     - **fjssp-w/**: Competition FJSSP-W instances (with worker flexibility).
 - **src/**:
-    - **algorithms/**: Meta-heuristic implementations including SPEA-II, LAHC, SPEA-II + LAHC Hybrid, Greedy baseline, and (μ,λ)/(μ+λ) evolution strategies.
+    - **algorithms/**: Meta-heuristic implementations including `SPEA-II`, `LAHC`, `SPEA-II + LAHC Hybrid`, and `(μ,λ) and (μ+λ) Evolution Strategies`.
     - **core/**: Core domain objects and abstractions used across algorithms.
     - **util/**: Utility modules provided by the official competition organizers for parsing, encoding and evaluation.
     - **benchmarker.py**: Benchmark execution and experiment orchestration.
