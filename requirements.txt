@@ -1,0 +1,5 @@
+matplotlib
+numpy
+optuna
+pandas
+scipy
