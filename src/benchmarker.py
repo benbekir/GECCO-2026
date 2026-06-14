@@ -10,6 +10,7 @@ from src.util.benchmark_parser import WorkerBenchmarkParser
 from src.util.evaluation import translate
 from scipy.stats import mannwhitneyu
 from typing import TYPE_CHECKING
+from scipy.stats import wilcoxon
 if TYPE_CHECKING:
     from src.core.fjssp_algorithm import FJSSPAlgorithm
 
@@ -169,21 +170,33 @@ class BenchmarkRunner:
                     
                     data_b = inst_df[inst_df['Algorithm'] == algo_b]['Makespan'].values
                     if len(data_b) == 0: continue
-                    
-                    stat, _ = mannwhitneyu(data_a, data_b, alternative='two-sided')
-                    n1, n2 = len(data_a), len(data_b)
-                    ps = ((n1 * n2) - stat) / (n1 * n2)
-                    global_ps_scores[algo_a].append(ps)
 
-        leaderboard = sorted([(algo, np.mean(scores)) for algo, scores in global_ps_scores.items() if scores], 
-                             key=lambda x: x[1], reverse=True)
+                    try:
+                        stat, p_value = wilcoxon(data_a, data_b, alternative='two-sided')
+                        if p_value < 0.05:
+                            median_a = np.median(data_a)
+                            median_b = np.median(data_b)
+                            if median_a < median_b:
+                                global_ps_scores[algo_a].append(1.0)  # Full win
+                            else:
+                                global_ps_scores[algo_a].append(0.0)  # Full loss
+                        else:
+                            global_ps_scores[algo_a].append(0.5)
+                    except ValueError:
+                        global_ps_scores[algo_a].append(0.5)
 
+        leaderboard = sorted(
+        [(algo, np.mean(scores)) for algo, scores in global_ps_scores.items() if scores], 
+        key=lambda x: x[1], 
+        reverse=True
+    )
+        print(f"\n=== P-Value {p_value:.4f} ===")
+        print("\n=== Final Algorithmic Leaderboard (Wilcoxon Rank) ===")
         for rank, (name, score) in enumerate(leaderboard, 1):
-            print(f"{rank}. {name:15} | Global PS: {score:.4f}")
+            print(f"{rank}. {name:15} | Global PS Index: {score:.4f}")
 
     def plot_convergence(self, history_files: list[str], instance_name: str):
         plt.figure(figsize=(12, 6))
-        
         for file_path in history_files:
             with open(file_path, 'r') as f:
                 data = json.load(f)
