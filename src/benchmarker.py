@@ -1,3 +1,4 @@
+import csv
 import os
 import time
 import json
@@ -148,18 +149,57 @@ class BenchmarkRunner:
         
         print(f"Done! Created {master_results_name} and {master_history_name}")
 
+    
+
     def perform_weighted_ranking(self, file_paths: list[str]):
         """
         Reads results from provided file paths and performs ranking.
         """
-        df = self._read_json(file_paths)
+        def convert_competition_csv(csv_path: str, output_json_path: str):
+            json_data = []
+            
+            with open(csv_path, mode='r', encoding='utf-8') as f:
+                reader = csv.DictReader(f, delimiter=';')
+                
+                for row in reader:
+                    raw_instance = row['Instance'].strip()
+                    raw_instance = raw_instance+".fjs" if not raw_instance.endswith(".fjs") else raw_instance
+                    
+                    makespan_val = float(row['LB'])
+                    
+        
+                    for run_id in range(1, 11):
+                        json_entry = {
+                            "Algorithm": "COMPETITION",
+                            "Instance": raw_instance,
+                            "Run_ID": run_id,
+                            "Makespan": makespan_val,
+                            "Balance": 0.0,
+                            "Evaluations": 0,
+                            "Runtime": 0.0,
+                            "start_times": [],
+                            "machine_assignments": [],
+                            "worker_assignments": []
+                        }
+                        json_data.append(json_entry)
+                        
+            # Save to your taste
+            with open(output_json_path, 'w', encoding='utf-8') as out_f:
+                json.dump(json_data, out_f, indent=4)
+            
+            print(f"Successfully converted {csv_path} to {output_json_path} with 10 aligned runs per instance!")
+        #Uncomment only if you need to convert it again
+        #convert_competition_csv("results/best_known.csv", "results/best_results.json")
 
+        df = self._read_json(file_paths)
         instances = df['Instance'].unique()
         algorithms = df['Algorithm'].unique()
         global_ps_scores = {algo: [] for algo in algorithms}
 
         for inst in instances:
+            inst = inst.replace(".fjs", "").split("_")[0]
             inst_df = df[df['Instance'] == inst]
+            
             
             for algo_a in algorithms:
                 data_a = inst_df[inst_df['Algorithm'] == algo_a]['Makespan'].values
@@ -173,6 +213,7 @@ class BenchmarkRunner:
 
                     try:
                         stat, p_value = wilcoxon(data_a, data_b, alternative='two-sided')
+                        print(f"Comparing {algo_a} vs {algo_b} on {inst}: p-value = {p_value:.4f}")
                         if p_value < 0.05:
                             median_a = np.median(data_a)
                             median_b = np.median(data_b)
@@ -190,7 +231,7 @@ class BenchmarkRunner:
         key=lambda x: x[1], 
         reverse=True
     )
-        print(f"\n=== P-Value {p_value:.4f} ===")
+    
         print("\n=== Final Algorithmic Leaderboard (Wilcoxon Rank) ===")
         for rank, (name, score) in enumerate(leaderboard, 1):
             print(f"{rank}. {name:15} | Global PS Index: {score:.4f}")
@@ -297,13 +338,13 @@ def main() -> None:
                              help="JSON result files")
 
     rank_parser = subparsers.add_parser("rank", help="Perform weighted ranking")
-    rank_parser.add_argument("--files", nargs="*", default=["results/LAHC.json", "results/SPEA-II.json", "results/OtherResearcher.json", "results/GREEDY.json"], 
+    rank_parser.add_argument("--files", nargs="*", default=["results/LAHC.json", "results/competition_results.json"], 
                              help="JSON result files")
 
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(["--help"])
 
     runner = BenchmarkRunner("instances/fjssp-w")
-
+    
     if args.command == "run":
         available_algorithms = {
             "LAHC": lambda: LAHCSolver(L=3000, max_iters=300_000),
